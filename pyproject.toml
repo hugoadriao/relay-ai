@@ -1,0 +1,27 @@
+[project]
+name = "relay-ai"
+version = "0.1.0"
+description = "Skills for GitHub Copilot that scope work and interrogate the developer before any code is written, with project discovery powered by a local Graphify knowledge graph."
+readme = "README.md"
+license = "MIT"
+requires-python = ">=3.12"
+dependencies = []
+
+[project.scripts]
+relay-ai = "relay_ai.cli:main"
+
+[project.urls]
+Homepage = "https://github.com/hugoadriao/relay-ai"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/relay_ai"]
+
+[tool.ruff]
+line-length = 100
+
+[tool.ruff.format]
+quote-style = "single"
