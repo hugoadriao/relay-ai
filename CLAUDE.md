@@ -19,10 +19,11 @@ antes de simplesmente ignorá-la.
 As seções "Planejado" e "Em aberto" do `SCOPE.md` são o trabalho pendente mais recente:
 
 - Validar o `langgraph-expert` no VS Code (checklist em "Planejado" no `SCOPE.md`).
-- Próximo conteúdo próprio: agente FastAPI e skills de debug Python — grillar nomes,
-  escopo e sobreposição com o mattpocock/skills antes de escrever; nada deve ser inventado
-  além do que está decidido sem perguntar.
-- Se vai existir uma skill de "grilling" própria ou se a do mattpocock/skills basta.
+- Validar a `debugging-python` num projeto real (checklist em "Planejado") e então
+  confirmar nome e invocação (#28).
+- Próximo conteúdo próprio: agente FastAPI — grillar nome, escopo e sobreposição com o
+  mattpocock/skills antes de escrever; nada deve ser inventado além do que está decidido sem
+  perguntar.
 
 ## Desenvolvimento da CLI
 

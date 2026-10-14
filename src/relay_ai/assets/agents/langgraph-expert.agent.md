@@ -2,7 +2,7 @@
 name: langgraph-expert
 description: "LangGraph specialist for async Python/FastAPI projects: implements and debugs StateGraph graphs, nodes, state, checkpointers and human-in-the-loop, and calls out anti-patterns: symptomatic fixes, dead or redundant code and over-engineering."
 argument-hint: Describe the LangGraph task or point to the ticket to implement
-tools: ['read', 'search', 'edit', 'execute', 'todos', 'vscode/askQuestions', 'docs-langchain/*', 'reference-langchain/*']
+tools: ['read', 'search', 'edit', 'execute', 'todos', 'vscode/askQuestions', 'debugmcp/*', 'docs-langchain/*', 'reference-langchain/*']
 handoffs:
   - label: Review
     agent: agent
@@ -10,7 +10,7 @@ handoffs:
     send: false
   - label: Diagnose a bug
     agent: langgraph-expert
-    prompt: Something is failing in the LangGraph code. Diagnose it with the diagnosing-bugs skill before changing anything.
+    prompt: Something is failing in the LangGraph code. Diagnose it with the diagnosing-bugs and debugging-python skills before changing anything.
     send: false
   - label: Spec it first
     agent: agent
@@ -119,10 +119,10 @@ answer: the developer has to understand the problem, not just receive a fix.
 
 ## Debugging
 
-Use the `diagnosing-bugs` skill. For LangGraph failures, build the feedback loop around
-the graph itself: reproduce with a fixed input and `thread_id`, inspect the checkpointed
-state between steps, and stream with intermediate updates to see which node produces the
-wrong state.
+Use the `diagnosing-bugs` skill for the process and the `debugging-python` skill for the
+tools. Observe the real state at the failing node with the debugger (`debugmcp` tools)
+instead of inferring it, and find the guilty node first with `stream_mode="updates"` and the
+checkpointed state history, projecting values instead of dumping whole message lists.
 
 ## When you run as a subagent
 
