@@ -31,8 +31,10 @@ Then reload VS Code (so `graphify` is on the agents' PATH) and, once, in Copilot
 2. Copies RelayAI's own agents into `.github/agents/` and skills into `.github/skills/`
    (see [What's in it](#whats-in-it)), lists the specialist agents in a
    `relay-ai` section of `.github/copilot-instructions.md` (so ticket-writing and
-   implementation skills route specialist work to them), and adds the MCP servers they
-   need to `.vscode/mcp.json` (existing entries are kept).
+   implementation skills route specialist work to them), adds the MCP servers they
+   need to `.vscode/mcp.json` and recommends the VS Code extensions they rely on in
+   `.vscode/extensions.json` — VS Code then offers to install them (existing entries are
+   kept in both files).
 3. Downloads [mattpocock/skills](https://github.com/mattpocock/skills) and copies its
    engineering and productivity skills into `.github/skills/`, unmodified, each with its
    original MIT `LICENSE`.
@@ -87,7 +89,13 @@ and open a new terminal, or move the project to a shorter path (e.g. `C:\dev\<pr
   — flows patched with `if`s, unnecessary code, over-engineering, LangGraph misuse — with
   a simpler way to build the feature.
 
-Coming next from RelayAI itself: a FastAPI specialist agent and Python debugging skills.
+- **`debugging-python`** (RelayAI) — a Python debugging skill the agent loads on its own
+  when debugging, alongside `diagnosing-bugs`. It makes the agent observe the real values at
+  the point of failure with VS Code's debugger (through DebugMCP: install it when VS Code
+  recommends it) instead of guessing, while keeping token use low: shape before values,
+  projections instead of dumping large objects, conditional breakpoints.
+
+Coming next from RelayAI itself: a FastAPI specialist agent.
 
 See `SCOPE.md` for the full decision log behind this project.
 
@@ -102,6 +110,7 @@ goes to their authors, and bugs or ideas about them belong upstream.
 | [mattpocock/skills](https://github.com/mattpocock/skills) | [Matt Pocock](https://github.com/mattpocock) | All the engineering and productivity skills (scoping, grilling, TDD, specs, reviews…). It's also the model RelayAI's own structure and conventions are based on. | MIT |
 | [Graphify](https://github.com/Graphify-Labs/graphify) | [Graphify Labs](https://github.com/Graphify-Labs) | The local knowledge graph behind project discovery, and its automatic updates. | MIT / Apache-2.0 |
 | [LangChain docs MCP servers](https://docs.langchain.com/use-these-docs) | [LangChain](https://github.com/langchain-ai) | Live LangGraph/LangChain documentation and API reference for the `langgraph-expert` agent. | hosted service |
+| [DebugMCP](https://github.com/microsoft/DebugMCP) | [Microsoft DevLabs](https://github.com/microsoft) | Gives the agent VS Code's debugger (breakpoints, stepping, variable inspection) for the `debugging-python` skill. | MIT |
 | [uv](https://github.com/astral-sh/uv) | [Astral](https://github.com/astral-sh) | Runs the RelayAI installer and installs Graphify. | MIT / Apache-2.0 |
 
 If you find RelayAI useful, please star and support these projects too.

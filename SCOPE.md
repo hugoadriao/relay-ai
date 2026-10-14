@@ -55,6 +55,10 @@ mesmo passo. Suporte a outros agentes (Claude Code, Codex, Cursor, etc.) fica pa
 | 22 | **O que é anti-pattern para o `langgraph-expert`** — o agente **julga o código pelo propósito**, não por uma lista fixa. Categorias: (1) **symptomatic fix** sobre fluxo mal desenhado: `if`s, verificações e fallbacks que só existem porque o fluxo não garante seus dados (ex.: o prompt/schema do LLM não produz um campo e alguém adiciona um `if` para improvisar) — corrige-se a **causa** (schema de saída estruturada, campo de state escrito pelo nó responsável, aresta explícita), não o sintoma; (2) **dead/redundant code** (ramos mortos, validação redundante, wrappers que só repassam, lógica duplicada); (3) **over-engineering** (*speculative generality*) com recursos do LangGraph/LangChain — código que funciona, mas com mais peças do que o problema pede, quando algo mais simples resolveria; (4) **LangGraph misuse** (a lista concreta de #21: `invoke` síncrono, compilar por request, state sem reducer etc.). Critérios: Clean Code, DRY, SOLID e práticas da documentação oficial e da comunidade — **a serviço da simplicidade**: nunca criar abstrações em nome desses princípios quando o problema não pede. **Padronização**: segue os padrões que o projeto já usa; se o projeto não tem padrão ou é inconsistente, aponta e propõe um único, aplicado ao código que toca. **Terminologia**: o agente usa termos técnicos formais em inglês (*anti-pattern*, *symptomatic fix*, *dead/redundant code*, *over-engineering* / *speculative generality*), nunca gíria. | Fechado |
 | 23 | **O que o `init` instala não aparece no git.** Em repositórios git, o `init` registra no **`.git/info/exclude`** (local, não versionado — nem o próprio arquivo de exclusão aparece no git; preferido ao `.gitignore`, que viraria ele mesmo uma alteração) um bloco entre `# relay-ai:start`/`# relay-ai:end`, reescrito a cada execução: (a) cada agente e cada pasta de skill instalados (RelayAI e Matt — só os nossos, nunca a pasta inteira, para não esconder agentes/skills do dev); (b) os arquivos compartilhados que o próprio `init` criou (`.github/copilot-instructions.md`, `.vscode/mcp.json`, `.graphifyignore`), lembrados entre execuções pelo próprio bloco. Os padrões levam o prefixo da subpasta quando o projeto não é a raiz do repositório. **Arquivos do Graphify** (`graphify-out/`, `.gitattributes`) **continuam visíveis**, seguindo o padrão dele (#11) de versionar o grafo. **Arquivos que já eram versionados** e foram alterados pelo `init` não podem ser escondidos: o `init` altera e **avisa** ao final, cabendo ao dev decidir se commita. Fora de repositório git, esse passo é pulado. | Fechado |
 | 24 | **Caminhos longos no Windows são detectados antes de instalar.** Com `LongPathsEnabled` desligado (registro `HKLM\SYSTEM\CurrentControlSet\Control\FileSystem`), o Graphify falha ao gravar o cache se o caminho passa de 260 caracteres — e o arquivo de cache mais longo fica ~128 caracteres abaixo da pasta do projeto (medido num caso real: projeto com 136 caracteres → 264). O `init` verifica **primeiro**, antes de qualquer instalação ou cópia: se `len(caminho do projeto) + 130 ≥ 260`, aborta explicando o problema e as duas soluções — (1) ligar os caminhos longos (comando PowerShell de administrador, abrir novo terminal) ou (2) mover/clonar o projeto para um caminho mais curto. Só no Windows e só com os caminhos longos desligados; nunca altera a configuração do sistema por conta própria. | Fechado |
+| 25 | **Sem skill de grilling própria.** O `grill-me`/`grilling` do mattpocock/skills, instalado pelo `init`, cobre o papel (#8). | Fechado |
+| 26 | O mattpocock/skills é instalado da **`main`**, sem fixar `sha`: a `main` é a branch que contém o que já foi revisado e validado lá, e cada `init` traz a versão mais recente. | Fechado |
+| 27 | **Debugger para o agente: [DebugMCP](https://github.com/microsoft/DebugMCP)** (Microsoft DevLabs, MIT), extensão do VS Code que expõe o **debugger do próprio VS Code** (Python via debugpy) como ferramentas MCP: breakpoints (inclusive condicionais e logpoints), step, `list_variable_names` (só nomes e tipos), `get_variables_values` (só o que for pedido) e `evaluate_expression`. Escolhido porque o agente e o dev usam o **mesmo** debugger (os breakpoints aparecem no editor do dev), nada é inserido no código (não sobra `breakpoint()` para limpar) e as ferramentas permitem ver a forma do dado antes do valor, economizando tokens. Entrega pelo `init`, sem instalar nada no VS Code do dev por conta própria: recomendação da extensão (`ozzafar.debugmcpextension`) em `.vscode/extensions.json` — o VS Code pergunta ao dev se quer instalar — e servidor `debugmcp` (`http://localhost:3001/mcp`) em `.vscode/mcp.json`; mesclagem igual à de #18 (preserva o existente; JSON com comentários fica intocado, com aviso). | Fechado |
+| 28 | Skill **`debugging-python`**: caixa de ferramentas Python que **complementa** o `diagnosing-bugs` do Matt (que dá o processo), sem processo próprio. Regra central: **observar, não inferir** — uma hipótese só é confirmada vendo o valor real (tipo, forma, conteúdo) no ponto da falha. **Economia de tokens**: nunca despejar objetos grandes (listas de mensagens, trocas entre agentes/tools); forma antes de valor; projeções (`len`, chaves, tipo, fatias); breakpoints condicionais e logpoints; saída de comandos curta. Debugger via DebugMCP (#27); sem ele, prints temporários **de projeções** com prefixo `[DEBUG-xxxx]`; o agente **nunca** roda `pdb`/`breakpoint()` (travaria esperando teclado) — só sugere ao dev. Corrige a causa, nunca o sintoma (mesmo princípio de #22): proíbe `try/except` que engole, `if x is None` em dado que deveria existir, `sleep`/retry para corrida, fixar versão sem entender. Ferramentas: stdlib primeiro; terceiros (`py-spy`, `pyinstrument`) só via `uvx`, sem entrar nas dependências do projeto sem perguntar. Estrutura: `SKILL.md` enxuto + referências lidas sob demanda (`debugger.md`, `langgraph.md`, `asyncio.md`, `performance.md`, `environment.md`). Nome e invocação: `debugging-python`, **model-invoked** (provisórios, a confirmar após o teste real). O `langgraph-expert` passa a ter `debugmcp/*` nas ferramentas e usa a skill na seção de debug. | Fechado |
 
 ## Layout atual do repositório
 
@@ -64,8 +68,9 @@ relay-ai/
 ├── src/relay_ai/            # CLI `relay-ai init`
 │   └── assets/              # conteúdo próprio (#16)
 │       ├── agents/langgraph-expert.agent.md   # #17, #21
-│       ├── skills/<nome>/SKILL.md   # ainda não existe
-│       └── mcp.json                 # servidores MCP dos agentes (#18)
+│       ├── skills/debugging-python/ # #28 (SKILL.md + referências)
+│       ├── extensions.json          # extensões recomendadas (#27)
+│       └── mcp.json                 # servidores MCP (#18, #27)
 ├── README.md
 ├── SCOPE.md
 └── CLAUDE.md                # carregado automaticamente pelo Claude Code; importa este arquivo
@@ -79,7 +84,9 @@ O que o `init` gera no projeto do dev:
 │   ├── agents/<agente>.agent.md     # agentes do RelayAI (#16)
 │   ├── skills/<skill>/SKILL.md      # RelayAI + mattpocock/skills (com LICENSE)
 │   └── copilot-instructions.md      # seção do Graphify (#11) + seção relay-ai (#20)
-├── .vscode/mcp.json                 # servidores MCP dos agentes (#18)
+├── .vscode/
+│   ├── extensions.json              # recomenda o DebugMCP (#27)
+│   └── mcp.json                     # servidores MCP (#18, #27)
 ├── .graphifyignore                  # com `.github/agents/` e `.github/skills/` (#13)
 └── graphify-out/                    # grafo gerado pelo Graphify
 ```
@@ -93,7 +100,7 @@ produto final, não sobre a ferramenta usada para construí-lo.
 
 - **Agente especialista em FastAPI** (`.agent.md`).
 - **`langgraph-expert`** (#17–#21) — escrito; falta validar no VS Code (abaixo).
-- **Skills de debug Python.**
+- **`debugging-python`** (#27, #28) — escrita; falta validar num projeto real.
 
 Pontos a grillar antes de escrever:
 
@@ -101,20 +108,18 @@ Pontos a grillar antes de escrever:
   o `/implement`/`/implement-spec` delegam ao especialista (#19); (b) os handoffs
   funcionam, inclusive `/grill-me` como `prompt`; (c) os servidores MCP sobem e o agente
   os consulta; (d) ferramentas e skills (`tdd`, `diagnosing-bugs`) disponíveis nele.
+- Validar a `debugging-python` num projeto real: (a) a skill é carregada sozinha ao depurar
+  (model-invoked); (b) o `start_debugging` do DebugMCP consegue rodar um teste pytest ou
+  exige `launch.json`; (c) o agente prefere projeções a despejar valores; (d) o popup de
+  auto-registro do DebugMCP não duplica o servidor `debugmcp` já posto no `.vscode/mcp.json`.
+  Depois do teste, confirmar nome e invocação (#28).
 - Nomes (em inglês, #6), escopo de cada agente e quais `tools`/`handoffs` o frontmatter
   declara.
-- Se as skills de debug são user-invoked ou model-invoked.
-- Sobreposição com o mattpocock/skills (#8): ele já instala `diagnosing-bugs`
-  (model-invoked, debug genérico) e `tdd`. As skills de debug Python devem complementar
-  essas (o que é específico de Python), não duplicar.
 - Se os agentes usam explicitamente o grafo do Graphify ou se basta o
   `copilot-instructions.md` (#11).
 
 ## Em aberto (próximos pontos a grillar)
 
-- Se existirá uma skill própria de "grilling" ou se o `grill-me`/`grilling` do
-  mattpocock/skills (instalado pelo `init`) cobre isso.
-- Fixar o mattpocock/skills num `sha` (estabilidade) ou seguir a `main` (como está hoje).
 - Publicar no PyPI (para `uvx relay-ai init`) e quando.
 - Adicionar um arquivo `LICENSE` ao repositório (o pacote declara MIT, mas o arquivo não
   existe).

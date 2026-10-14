@@ -1,5 +1,9 @@
 {
   "servers": {
+    "debugmcp": {
+      "type": "http",
+      "url": "http://localhost:3001/mcp"
+    },
     "docs-langchain": {
       "type": "http",
       "url": "https://docs.langchain.com/mcp"

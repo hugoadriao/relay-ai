@@ -13,11 +13,16 @@ from relay_ai.git import (
 )
 from relay_ai.graphify import GRAPHIFY_IGNORE_FILE, configure_project, ensure_graphify
 from relay_ai.instructions import COPILOT_INSTRUCTIONS, write_specialists_section
-from relay_ai.mcp import MCP_CONFIG, add_mcp_servers
+from relay_ai.vscode import (
+    EXTENSIONS_CONFIG,
+    MCP_CONFIG,
+    add_extension_recommendations,
+    add_mcp_servers,
+)
 from relay_ai.windows import check_path_length
 
 AGENTS_DIR = Path('.github') / 'agents'
-SHARED_FILES = (COPILOT_INSTRUCTIONS, MCP_CONFIG, Path(GRAPHIFY_IGNORE_FILE))
+SHARED_FILES = (COPILOT_INSTRUCTIONS, EXTENSIONS_CONFIG, MCP_CONFIG, Path(GRAPHIFY_IGNORE_FILE))
 SKILLS_DIR = Path('.github') / 'skills'
 
 
@@ -37,6 +42,7 @@ def init(project: Path) -> None:
         console.info(f'RelayAI agents: {", ".join(agent.name for agent in relay_agents)}')
     write_specialists_section(project, relay_agents)
     add_mcp_servers(project)
+    add_extension_recommendations(project)
 
     skills_dir = project / SKILLS_DIR
     skills_dir.mkdir(parents=True, exist_ok=True)
