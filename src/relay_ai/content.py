@@ -32,7 +32,7 @@ def asset(name: str) -> Traversable:
     return files('relay_ai') / 'assets' / name
 
 
-def install_mattpocock_skills(target: Path) -> list[str]:
+def install_mattpocock_skills(target: Path, owned: set[str]) -> list[str]:
     console.info(f'Downloading mattpocock/skills ({MATTPOCOCK_REF})...')
     archive = _download(MATTPOCOCK_ZIP_URL)
 
@@ -44,13 +44,15 @@ def install_mattpocock_skills(target: Path) -> list[str]:
         for category in MATTPOCOCK_CATEGORIES:
             for skill in _skill_dirs(repository / 'skills' / category):
                 destination = target / skill.name
+                if not _can_replace(destination, owned):
+                    continue
                 _replace_dir(skill, destination)
                 shutil.copy2(license_file, destination / 'LICENSE')
                 installed.append(skill.name)
     return installed
 
 
-def install_relay_agents(target: Path) -> list[Agent]:
+def install_relay_agents(target: Path, owned: set[str]) -> list[Agent]:
     source = asset('agents')
     if not source.is_dir():
         return []
@@ -61,21 +63,43 @@ def install_relay_agents(target: Path) -> list[Agent]:
         if agent_files:
             target.mkdir(parents=True, exist_ok=True)
         for agent_file in agent_files:
+            if not _can_replace(target / agent_file.name, owned):
+                continue
             shutil.copy2(agent_file, target / agent_file.name)
             installed.append(_read_agent(agent_file))
     return installed
 
 
-def install_relay_skills(target: Path) -> list[str]:
+def install_relay_skills(target: Path, owned: set[str]) -> list[str]:
     source = asset('skills')
     if not source.is_dir():
         return []
 
+    installed = []
     with as_file(source) as skills_dir:
-        skills = _skill_dirs(skills_dir)
-        for skill in skills:
+        for skill in _skill_dirs(skills_dir):
+            if not _can_replace(target / skill.name, owned):
+                continue
             _replace_dir(skill, target / skill.name)
-    return [skill.name for skill in skills]
+            installed.append(skill.name)
+    return installed
+
+
+def remove_installed(path: Path) -> None:
+    if path.is_dir():
+        shutil.rmtree(path)
+    elif path.exists():
+        path.unlink()
+
+
+def _can_replace(destination: Path, owned: set[str]) -> bool:
+    if not destination.exists() or destination.name in owned:
+        return True
+    console.warn(
+        f'{destination} already exists and was not installed by RelayAI; '
+        'leaving it untouched (rename it to get the RelayAI version).'
+    )
+    return False
 
 
 def _download(url: str) -> bytes:

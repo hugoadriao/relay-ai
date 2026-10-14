@@ -1,6 +1,6 @@
 [project]
 name = "relay-ai"
-version = "0.1.0"
+version = "0.2.0"
 description = "Skills for GitHub Copilot that scope work and interrogate the developer before any code is written, with project discovery powered by a local Graphify knowledge graph."
 readme = "README.md"
 license = "MIT"

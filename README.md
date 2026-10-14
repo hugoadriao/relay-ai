@@ -54,14 +54,74 @@ Then reload VS Code (so `graphify` is on the agents' PATH) and, once, in Copilot
    because Graphify is designed for the graph to be committed and shared. If `init` had to
    change a file your repository already tracks (e.g. an existing
    `.github/copilot-instructions.md`), it tells you, so you can review that diff.
+6. Records everything it installed or added in `.github/relay-ai.json`, so `update` and
+   `uninstall` touch only what is RelayAI's.
 
-Re-running `init` updates everything it installed. It replaces each skill folder and agent
-file RelayAI manages, so local edits to those are lost.
+`init` never overwrites your own agents and skills: if one of yours has the same name as
+one RelayAI installs, yours is kept and `init` tells you.
 
 To refresh the knowledge graph by hand, use Graphify's own commands: `graphify update .`
 for code, `/graphify --update` in Copilot Chat for docs and images.
 
-### Troubleshooting
+## Updating
+
+From the root of your project:
+
+```bash
+uvx --from git+https://github.com/hugoadriao/relay-ai relay-ai update
+```
+
+`update` fetches the latest RelayAI and refreshes everything it manages: its agents and
+skills, mattpocock/skills, the `relay-ai` section of `.github/copilot-instructions.md`, the
+VS Code config entries, the git excludes and the graph. It removes agents and skills that
+are no longer part of RelayAI, and ends with a summary of what was updated, added and
+removed.
+
+Local edits to the agents and skills RelayAI installed are overwritten, so put your own
+customisations in agents and skills with other names.
+
+Graphify isn't upgraded by `update`, because it's installed machine-wide and other projects
+may use it. Upgrade it when you want with:
+
+```bash
+uv tool upgrade graphifyy
+```
+
+DebugMCP is a VS Code extension and updates with your other extensions. If `uvx` ever seems
+to run an old RelayAI, add `--refresh` to the command to bypass its cache.
+
+## Uninstalling
+
+From the root of your project:
+
+```bash
+uvx --from git+https://github.com/hugoadriao/relay-ai relay-ai uninstall
+```
+
+It lists exactly what it will remove and asks for confirmation (`--yes` skips the
+question). It removes only what `.github/relay-ai.json` says RelayAI installed or added:
+
+- its agents and skills (and mattpocock/skills), not yours;
+- its section of `.github/copilot-instructions.md`, keeping the rest of the file;
+- the MCP servers, extension recommendations and `.graphifyignore` lines it added, keeping
+  the entries you had;
+- the files it created, if nothing else is left in them, and its block in
+  `.git/info/exclude`.
+
+Graphify's setup in the project (git hooks, its section of
+`.github/copilot-instructions.md`, `graphify-out/`) is kept, because your team may share
+the graph. To remove the hooks and its section too, add `--graphify` (it also works after
+RelayAI was already uninstalled):
+
+```bash
+uvx --from git+https://github.com/hugoadriao/relay-ai relay-ai uninstall --graphify
+```
+
+The graph in `graphify-out/` is never deleted; remove that folder yourself if you don't want
+it. Graphify itself stays installed on your machine for other projects; remove it with
+`uv tool uninstall graphifyy`.
+
+## Troubleshooting
 
 **Windows: "this project's path is too long".** With Windows long paths disabled, files
 deeper than 260 characters can't be written, and Graphify's cache files sit about 130

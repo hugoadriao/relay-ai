@@ -2,14 +2,14 @@ import shutil
 from pathlib import Path
 
 from relay_ai import console
-from relay_ai.blocks import read_block, upsert_block
+from relay_ai.blocks import read_block, remove_block, upsert_block
 from relay_ai.errors import SetupError
 from relay_ai.process import capture
 
 EXCLUDE_END = '# relay-ai:end'
 EXCLUDE_START = '# relay-ai:start'
 EXCLUDE_TEMPLATE = """{start}
-# Installed by `relay-ai init` (local to this clone; re-running init rewrites this block)
+# Installed by RelayAI (local to this clone; `relay-ai update` rewrites this block)
 {patterns}
 {end}
 """
@@ -46,6 +46,10 @@ def modified_tracked_files(project: Path, paths: list[Path]) -> list[str]:
         return []
     output = capture([_git(), 'ls-files', '--modified', '--', *map(str, paths)], cwd=project)
     return output.splitlines()
+
+
+def remove_exclusions(project: Path) -> None:
+    remove_block(_exclude_file(project), EXCLUDE_START, EXCLUDE_END)
 
 
 def _exclude_file(project: Path) -> Path:
