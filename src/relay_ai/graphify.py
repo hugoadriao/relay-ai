@@ -3,6 +3,7 @@ from pathlib import Path
 
 from relay_ai import console
 from relay_ai.errors import SetupError
+from relay_ai.git import is_git_repository
 from relay_ai.process import capture, run
 
 GRAPHIFY_IGNORE_FILE = '.graphifyignore'
@@ -17,7 +18,7 @@ def configure_project(executable: str, project: Path, ignored_dirs: list[Path]) 
     console.info('Configuring Graphify for VS Code Copilot Chat...')
     run([executable, 'vscode', 'install'], cwd=project)
 
-    if _is_git_repository(project):
+    if is_git_repository(project):
         console.info('Installing Graphify git hooks (graph updates on every commit)...')
         run([executable, 'hook', 'install'], cwd=project)
     else:
@@ -62,13 +63,3 @@ def _add_to_graphify_ignore(project: Path, pattern: str) -> None:
     separator = '\n' if content and not content.endswith('\n') else ''
     with ignore_file.open('a', encoding='utf-8', newline='') as file:
         file.write(f'{separator}{pattern}\n')
-
-
-def _is_git_repository(project: Path) -> bool:
-    git = shutil.which('git')
-    if git is None:
-        return False
-    try:
-        return capture([git, 'rev-parse', '--is-inside-work-tree'], cwd=project) == 'true'
-    except SetupError:
-        return False

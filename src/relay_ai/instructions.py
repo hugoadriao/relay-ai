@@ -1,6 +1,7 @@
 from pathlib import Path
 
 from relay_ai import console
+from relay_ai.blocks import upsert_block
 from relay_ai.content import Agent
 
 COPILOT_INSTRUCTIONS = Path('.github') / 'copilot-instructions.md'
@@ -27,30 +28,7 @@ def write_specialists_section(project: Path, agents: list[Agent]) -> None:
     if not agents:
         return
 
-    instructions_file = project / COPILOT_INSTRUCTIONS
     console.info(f'Registering specialist agents in {COPILOT_INSTRUCTIONS.as_posix()}...')
     agent_lines = '\n'.join(f'- `{agent.name}`: {agent.description}' for agent in agents)
     section = SECTION_TEMPLATE.format(agents=agent_lines, end=SECTION_END, start=SECTION_START)
-
-    content = _read(instructions_file)
-    start = content.find(SECTION_START)
-    end = content.find(SECTION_END)
-    if start != -1 and end > start:
-        tail = content[end + len(SECTION_END) :].removeprefix('\r\n').removeprefix('\n')
-        content = f'{content[:start]}{section}{tail}'
-    elif content:
-        separator = '\n' if content.endswith('\n') else '\n\n'
-        content = f'{content}{separator}{section}'
-    else:
-        content = section
-
-    instructions_file.parent.mkdir(parents=True, exist_ok=True)
-    with instructions_file.open('w', encoding='utf-8', newline='') as file:
-        file.write(content)
-
-
-def _read(path: Path) -> str:
-    if not path.exists():
-        return ''
-    with path.open(encoding='utf-8', newline='') as file:
-        return file.read()
+    upsert_block(project / COPILOT_INSTRUCTIONS, SECTION_START, SECTION_END, section)

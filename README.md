@@ -46,11 +46,31 @@ Then reload VS Code (so `graphify` is on the agents' PATH) and, once, in Copilot
      branch checkout (skipped if the project isn't a git repository);
    - `graphify update .` — builds the initial code graph (no LLM needed).
 
+5. Keeps what it installed out of git: the agents and skills, plus the config files it
+   created, are listed in `.git/info/exclude` (local to your clone, so not even that list
+   shows up in git). Graphify's own files (`graphify-out/`, `.gitattributes`) stay visible,
+   because Graphify is designed for the graph to be committed and shared. If `init` had to
+   change a file your repository already tracks (e.g. an existing
+   `.github/copilot-instructions.md`), it tells you, so you can review that diff.
+
 Re-running `init` updates everything it installed. It replaces each skill folder and agent
 file RelayAI manages, so local edits to those are lost.
 
 To refresh the knowledge graph by hand, use Graphify's own commands: `graphify update .`
 for code, `/graphify --update` in Copilot Chat for docs and images.
+
+### Troubleshooting
+
+**Windows: "this project's path is too long".** With Windows long paths disabled, files
+deeper than 260 characters can't be written, and Graphify's cache files sit about 130
+characters below your project folder. `init` checks this before installing anything.
+Either enable long paths, in PowerShell run as administrator:
+
+```powershell
+New-ItemProperty -Path 'HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem' -Name LongPathsEnabled -Value 1 -PropertyType DWORD -Force
+```
+
+and open a new terminal, or move the project to a shorter path (e.g. `C:\dev\<project>`).
 
 ## What's in it
 
