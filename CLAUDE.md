@@ -29,6 +29,7 @@ As seções "Planejado" e "Em aberto" do `SCOPE.md` são o trabalho pendente mai
 
 - Código em `src/relay_ai/` (Python ≥ 3.12, ruff com 100 colunas e aspas simples).
 - Conteúdo próprio em `src/relay_ai/assets/agents/` e `src/relay_ai/assets/skills/` (#16).
+- Comandos: `init`, `update` e `uninstall` (#29); `install.py` cobre `init`/`update`.
 - Testar ponta a ponta: `uvx --no-cache --from . relay-ai init <pasta-de-teste>` (sem
   `--no-cache`, o uv reaproveita a build anterior enquanto a versão não muda) — nunca rode
   o `init` dentro deste repositório, ele escreve `.github/` e `graphify-out/` no destino.
