@@ -24,6 +24,7 @@ SKILL_FILE = 'SKILL.md'
 @dataclass(frozen=True)
 class Agent:
     description: str
+    file_name: str
     name: str
 
 
@@ -105,7 +106,7 @@ def _read_agent(agent_file: Path) -> Agent:
     if not fields.get('description'):
         raise SetupError(f'agent {agent_file.name} has no description in its frontmatter')
     name = fields.get('name') or agent_file.name.removesuffix(AGENT_SUFFIX)
-    return Agent(description=fields['description'], name=name)
+    return Agent(description=fields['description'], file_name=agent_file.name, name=name)
 
 
 def _replace_dir(source: Path, destination: Path) -> None:
