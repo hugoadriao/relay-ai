@@ -1,21 +1,24 @@
 ---
 name: langgraph-expert
 description: "LangGraph specialist for async Python/FastAPI projects: implements and debugs StateGraph graphs, nodes, state, checkpointers and human-in-the-loop, and calls out anti-patterns: symptomatic fixes, dead or redundant code and over-engineering."
-argument-hint: Describe the LangGraph task or point to the ticket to implement
-tools: ['read', 'search', 'edit', 'execute', 'todos', 'vscode/askQuestions', 'debugmcp/*', 'docs-langchain/*', 'reference-langchain/*']
-handoffs:
-  - label: Review
-    agent: agent
-    prompt: Review the changes just made, using the code-review skill.
-    send: false
-  - label: Diagnose a bug
-    agent: langgraph-expert
-    prompt: Something is failing in the LangGraph code. Diagnose it with the diagnosing-bugs and debugging-python skills before changing anything.
-    send: false
-  - label: Spec it first
-    agent: agent
-    prompt: /grill-me
-    send: false
+copilot:
+  argument-hint: Describe the LangGraph task or point to the ticket to implement
+  tools: ['read', 'search', 'edit', 'execute', 'todos', 'vscode/askQuestions', 'mcp-debugger/*', 'docs-langchain/*', 'reference-langchain/*']
+  handoffs:
+    - label: Review
+      agent: agent
+      prompt: Review the changes just made, using the code-review skill.
+      send: false
+    - label: Diagnose a bug
+      agent: langgraph-expert
+      prompt: Something is failing in the LangGraph code. Diagnose it with the diagnosing-bugs and debugging-python skills before changing anything.
+      send: false
+    - label: Spec it first
+      agent: agent
+      prompt: /grill-me
+      send: false
+opencode:
+  mode: all
 ---
 
 # LangGraph expert
@@ -30,7 +33,8 @@ graph uses it (chat models, messages, tools); you are not a general LangChain ag
    between versions. Before writing or changing code that depends on a LangGraph or
    LangChain API, confirm the current usage with the `docs-langchain` MCP server (guides,
    how-tos) and the exact signature with the `reference-langchain` MCP server. Match the
-   version installed in the project (check its lockfile or `pyproject.toml`).
+   version installed in the project (check its lockfile or `pyproject.toml`). If those MCP
+   servers aren't available, read the official LangGraph docs pages directly instead.
 2. **Find what already exists.** Look for existing graphs, state schemas, nodes and
    checkpointer setup before creating new ones, and extend them instead of duplicating.
 3. **If you were given a ticket**, read it in full, including its acceptance criteria and
@@ -120,7 +124,7 @@ answer: the developer has to understand the problem, not just receive a fix.
 ## Debugging
 
 Use the `diagnosing-bugs` skill for the process and the `debugging-python` skill for the
-tools. Observe the real state at the failing node with the debugger (`debugmcp` tools)
+tools. Observe the real state at the failing node with the debugger (`mcp-debugger` tools)
 instead of inferring it, and find the guilty node first with `stream_mode="updates"` and the
 checkpointed state history, projecting values instead of dumping whole message lists.
 

@@ -1,16 +1,46 @@
 # RelayAI
 
-Skills for GitHub Copilot that scope your work and interrogate you about it before any
-code gets written — plus project-aware discovery powered by a local knowledge graph
-([Graphify](https://github.com/Graphify-Labs/graphify)).
+Agents and skills for **GitHub Copilot (VS Code)** and **OpenCode** that scope your work and
+interrogate you about it before any code gets written — plus project-aware discovery
+powered by a local knowledge graph ([Graphify](https://github.com/Graphify-Labs/graphify)).
 
 RelayAI doesn't reinvent what already exists: it builds on top of other open-source
-projects and adds what's missing between them. See [Credits](#credits).
+projects and open standards, and adds what's missing between them. See [Credits](#credits).
 
-## Installation (GitHub Copilot in VS Code)
+## Prerequisites
 
-Prerequisite: [uv](https://docs.astral.sh/uv/getting-started/installation/) — the same
-tool Graphify needs.
+RelayAI needs two tools on your machine. `relay-ai init` checks both before installing
+anything and stops with instructions if one is missing.
+
+### uv
+
+[uv](https://docs.astral.sh/uv/getting-started/installation/) runs the RelayAI installer and
+installs Graphify.
+
+- Windows (PowerShell): `powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"`
+- macOS / Linux: `curl -LsSf https://astral.sh/uv/install.sh | sh`
+
+### Node.js 22 or newer
+
+Node.js runs the debugger the agents use ([mcp-debugger](https://github.com/debugmcp/mcp-debugger)).
+
+1. Check whether you have it, and which version:
+
+   ```bash
+   node --version
+   ```
+
+   If it prints `v22` or higher, you're done.
+2. Otherwise, install the current LTS:
+   - **Windows:** `winget install OpenJS.NodeJS.LTS`, or the installer from
+     [nodejs.org](https://nodejs.org/en/download).
+   - **macOS:** `brew install node`, or the installer from
+     [nodejs.org](https://nodejs.org/en/download).
+   - **Linux:** your distribution's package manager, or
+     [nvm](https://github.com/nvm-sh/nvm) (`nvm install --lts`).
+3. Open a **new** terminal and run `node --version` again.
+
+## Installation
 
 From the root of your project:
 
@@ -18,50 +48,69 @@ From the root of your project:
 uvx --from git+https://github.com/hugoadriao/relay-ai relay-ai init
 ```
 
-Then reload VS Code (so `graphify` is on the agents' PATH) and, once, in Copilot Chat:
+`init` asks which platform to install for: **GitHub Copilot (VS Code)**, **OpenCode**, or
+**both**. To skip the question, pass `--platform copilot`, `--platform opencode` or
+`--platform both`.
 
-```
-/setup-matt-pocock-skills
-```
+Then:
+
+1. **Reload your editor** so it picks up the new agents, skills and MCP servers:
+   - VS Code: run **Developer: Reload Window** from the Command Palette. Agents, skills and
+     MCP servers only show up after the reload.
+   - OpenCode: restart it.
+2. Once per repository, in the chat, run:
+
+   ```
+   /setup-matt-pocock-skills
+   ```
+
+   It asks how your project tracks issues and where its docs live, and saves that to
+   `AGENTS.md`, which both Copilot and OpenCode read. `init` creates an empty `AGENTS.md`
+   for this when your project has neither `AGENTS.md` nor `CLAUDE.md`.
+3. The first time an MCP server starts, your editor may ask you to trust it.
 
 ### What `relay-ai init` does
 
 1. Installs the Graphify CLI if it's missing (`uv tool install graphifyy`) and puts it on
    your PATH (`uv tool update-shell`).
-2. Copies RelayAI's own agents into `.github/agents/` and skills into `.github/skills/`
-   (see [What's in it](#whats-in-it)), lists the specialist agents in a
-   `relay-ai` section of `.github/copilot-instructions.md` (so ticket-writing and
-   implementation skills route specialist work to them), adds the MCP servers they
-   need to `.vscode/mcp.json` and recommends the VS Code extensions they rely on in
-   `.vscode/extensions.json` — VS Code then offers to install them (existing entries are
-   kept in both files).
-3. Downloads [mattpocock/skills](https://github.com/mattpocock/skills) and copies its
-   engineering and productivity skills into `.github/skills/`, unmodified, each with its
-   original MIT `LICENSE`.
+2. Copies the skills — RelayAI's own and the engineering and productivity skills of
+   [mattpocock/skills](https://github.com/mattpocock/skills), unmodified, each with its
+   original MIT `LICENSE` — into `.agents/skills/`. Skills follow the open
+   [Agent Skills](https://agentskills.io) standard, and `.agents/skills/` is read by both
+   VS Code and OpenCode (and other tools), so they're installed once.
+3. For each platform you chose:
+   - writes RelayAI's agents in that platform's format (`.github/agents/*.agent.md` for
+     Copilot, `.opencode/agents/*.md` for OpenCode);
+   - lists the specialist agents in a `relay-ai` section of the platform's instructions
+     file (`.github/copilot-instructions.md` for Copilot, `AGENTS.md` for OpenCode), so
+     ticket-writing and implementation skills route specialist work to them;
+   - adds the MCP servers the agents use to the platform's config (`.vscode/mcp.json` or
+     `opencode.json`), keeping the entries you already had.
 4. Sets Graphify up exactly as it's designed to work:
-   - adds `.github/agents/` and `.github/skills/` to `.graphifyignore`, so the graph
-     describes your code, not the installed agents and skills (existing lines in the file
-     are kept);
-   - `graphify vscode install` — writes `.github/copilot-instructions.md`, so Copilot
-     always checks the knowledge graph before answering questions about your code;
-   - `graphify hook install` — git hooks that update the graph on every commit and
-     branch checkout (skipped if the project isn't a git repository);
+   - adds RelayAI's agent and skill folders to `.graphifyignore`, so the graph describes
+     your code, not the installed agents and skills (existing lines are kept);
+   - connects Graphify to each platform (`graphify vscode install` / `graphify opencode
+     install`), so the agents always check the knowledge graph before answering questions
+     about your code;
+   - `graphify hook install` — git hooks that update the graph on every commit and branch
+     checkout (skipped if the project isn't a git repository);
    - `graphify update .` — builds the initial code graph (no LLM needed).
-
-5. Keeps what it installed out of git: the agents and skills, plus the config files it
-   created, are listed in `.git/info/exclude` (local to your clone, so not even that list
-   shows up in git). Graphify's own files (`graphify-out/`, `.gitattributes`) stay visible,
-   because Graphify is designed for the graph to be committed and shared. If `init` had to
-   change a file your repository already tracks (e.g. an existing
-   `.github/copilot-instructions.md`), it tells you, so you can review that diff.
+5. Keeps what it installed out of git: the agents and skills, plus the files it created
+   (including `AGENTS.md`), are listed in `.git/info/exclude`, which is local to your clone,
+   so not even that list shows up in git. Graphify's own files (`graphify-out/`,
+   `.gitattributes`, `.opencode/plugins/graphify.js`) stay visible, because Graphify is
+   designed for the graph to be committed and shared. If `init` had to change a file your
+   repository already tracks, it tells you, so you can review that diff.
 6. Records everything it installed or added in `.github/relay-ai.json`, so `update` and
    `uninstall` touch only what is RelayAI's.
 
 `init` never overwrites your own agents and skills: if one of yours has the same name as
-one RelayAI installs, yours is kept and `init` tells you.
+one RelayAI installs, yours is kept and `init` tells you. Running `init` again with another
+`--platform` switches platforms, removing what RelayAI had installed for the one you
+dropped.
 
 To refresh the knowledge graph by hand, use Graphify's own commands: `graphify update .`
-for code, `/graphify --update` in Copilot Chat for docs and images.
+for code, `/graphify --update` in the chat for docs and images.
 
 ## Updating
 
@@ -71,11 +120,11 @@ From the root of your project:
 uvx --from git+https://github.com/hugoadriao/relay-ai relay-ai update
 ```
 
-`update` fetches the latest RelayAI and refreshes everything it manages: its agents and
-skills, mattpocock/skills, the `relay-ai` section of `.github/copilot-instructions.md`, the
-VS Code config entries, the git excludes and the graph. It removes agents and skills that
-are no longer part of RelayAI, and ends with a summary of what was updated, added and
-removed.
+`update` fetches the latest RelayAI and refreshes everything it manages, for the platforms
+you installed it for: agents and skills, mattpocock/skills, the `relay-ai` sections, the
+MCP servers, the git excludes and the graph. It removes what is no longer part of RelayAI —
+including moving skills from older installs out of `.github/skills/` — and ends with a
+summary of what was updated, added and removed.
 
 Local edits to the agents and skills RelayAI installed are overwritten, so put your own
 customisations in agents and skills with other names.
@@ -87,8 +136,8 @@ may use it. Upgrade it when you want with:
 uv tool upgrade graphifyy
 ```
 
-DebugMCP is a VS Code extension and updates with your other extensions. If `uvx` ever seems
-to run an old RelayAI, add `--refresh` to the command to bypass its cache.
+If `uvx` ever seems to run an old RelayAI, add `--refresh` to the command to bypass its
+cache.
 
 ## Uninstalling
 
@@ -102,16 +151,15 @@ It lists exactly what it will remove and asks for confirmation (`--yes` skips th
 question). It removes only what `.github/relay-ai.json` says RelayAI installed or added:
 
 - its agents and skills (and mattpocock/skills), not yours;
-- its section of `.github/copilot-instructions.md`, keeping the rest of the file;
-- the MCP servers, extension recommendations and `.graphifyignore` lines it added, keeping
-  the entries you had;
+- its sections of `.github/copilot-instructions.md` and `AGENTS.md`, keeping the rest of
+  each file;
+- the MCP servers and `.graphifyignore` lines it added, keeping the entries you had;
 - the files it created, if nothing else is left in them, and its block in
   `.git/info/exclude`.
 
-Graphify's setup in the project (git hooks, its section of
-`.github/copilot-instructions.md`, `graphify-out/`) is kept, because your team may share
-the graph. To remove the hooks and its section too, add `--graphify` (it also works after
-RelayAI was already uninstalled):
+Graphify's setup in the project (git hooks and its sections in the instructions files) is
+kept, because your team may share the graph. To remove it too, add `--graphify` (it also
+works after RelayAI was already uninstalled):
 
 ```bash
 uvx --from git+https://github.com/hugoadriao/relay-ai relay-ai uninstall --graphify
@@ -134,26 +182,31 @@ New-ItemProperty -Path 'HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem' -Name
 
 and open a new terminal, or move the project to a shorter path (e.g. `C:\dev\<project>`).
 
+**MCP servers blocked.** Some corporate environments block MCP servers or the downloads
+they need (`npx`, remote URLs). RelayAI's agents still work without them: the
+`langgraph-expert` falls back to reading the official docs directly, and `debugging-python`
+falls back to temporary, targeted prints.
+
 ## What's in it
 
 - Engineering and productivity skills (`grill-me`, `tdd`, `to-spec`, `code-review`,
   `diagnosing-bugs`, …) from [mattpocock/skills](https://github.com/mattpocock/skills).
   See its README for the full list.
 - Project discovery through Graphify's knowledge graph, kept up to date by its git hooks.
-
 - **`langgraph-expert`** (RelayAI) — a LangGraph specialist agent for async
-  Python/FastAPI projects. Pick it in the Copilot Chat agent picker, or let `/implement`
-  and `/implement-spec` delegate LangGraph tickets to it (tickets get a
-  `**Specialist:** langgraph-expert` line from `/to-tickets`). It checks the live LangGraph
-  docs before using an API, works test-first, and calls out hacky workarounds plainly
-  — flows patched with `if`s, unnecessary code, over-engineering, LangGraph misuse — with
-  a simpler way to build the feature.
-
+  Python/FastAPI projects. Pick it in the agent picker (Copilot) or call it with
+  `@langgraph-expert` (OpenCode), or let `/implement` and `/implement-spec` delegate
+  LangGraph tickets to it (tickets get a `**Specialist:** langgraph-expert` line from
+  `/to-tickets`). It checks the live LangGraph docs before using an API, works test-first,
+  and calls out anti-patterns plainly — symptomatic fixes, dead or redundant code,
+  over-engineering, LangGraph misuse — with a simpler way to build the feature.
 - **`debugging-python`** (RelayAI) — a Python debugging skill the agent loads on its own
-  when debugging, alongside `diagnosing-bugs`. It makes the agent observe the real values at
-  the point of failure with VS Code's debugger (through DebugMCP: install it when VS Code
-  recommends it) instead of guessing, while keeping token use low: shape before values,
-  projections instead of dumping large objects, conditional breakpoints.
+  when debugging, alongside `diagnosing-bugs`. It makes the agent observe the real values
+  at the point of failure with a real debugger
+  ([mcp-debugger](https://github.com/debugmcp/mcp-debugger), driving a temporary `debugpy`)
+  instead of guessing, while keeping token use low: shape before values, projections
+  instead of dumping large objects, conditional breakpoints. The debugger runs locally and
+  sends nothing out of your machine.
 
 Coming next from RelayAI itself: a FastAPI specialist agent.
 
@@ -169,8 +222,11 @@ goes to their authors, and bugs or ideas about them belong upstream.
 |---|---|---|---|
 | [mattpocock/skills](https://github.com/mattpocock/skills) | [Matt Pocock](https://github.com/mattpocock) | All the engineering and productivity skills (scoping, grilling, TDD, specs, reviews…). It's also the model RelayAI's own structure and conventions are based on. | MIT |
 | [Graphify](https://github.com/Graphify-Labs/graphify) | [Graphify Labs](https://github.com/Graphify-Labs) | The local knowledge graph behind project discovery, and its automatic updates. | MIT / Apache-2.0 |
+| [mcp-debugger](https://github.com/debugmcp/mcp-debugger) | [debugmcp](https://github.com/debugmcp) | The local debugger (breakpoints, stepping, variable inspection) behind the `debugging-python` skill. | MIT |
+| [debugpy](https://github.com/microsoft/debugpy) | [Microsoft](https://github.com/microsoft) | The Python debug adapter mcp-debugger drives, run on the fly with `uv`. | MIT |
 | [LangChain docs MCP servers](https://docs.langchain.com/use-these-docs) | [LangChain](https://github.com/langchain-ai) | Live LangGraph/LangChain documentation and API reference for the `langgraph-expert` agent. | hosted service |
-| [DebugMCP](https://github.com/microsoft/DebugMCP) | [Microsoft DevLabs](https://github.com/microsoft) | Gives the agent VS Code's debugger (breakpoints, stepping, variable inspection) for the `debugging-python` skill. | MIT |
 | [uv](https://github.com/astral-sh/uv) | [Astral](https://github.com/astral-sh) | Runs the RelayAI installer and installs Graphify. | MIT / Apache-2.0 |
+| [Agent Skills](https://agentskills.io) | Anthropic and contributors | The open skill format (`SKILL.md`) RelayAI's skills follow. | open standard |
+| [AGENTS.md](https://agents.md) | Agentic AI Foundation (Linux Foundation) | The open instructions file shared by Copilot and OpenCode. | open standard |
 
 If you find RelayAI useful, please star and support these projects too.

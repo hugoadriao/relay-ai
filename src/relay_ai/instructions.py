@@ -1,10 +1,10 @@
 from pathlib import Path
 
 from relay_ai import console
-from relay_ai.blocks import remove_block, upsert_block
+from relay_ai.blocks import read_block, remove_block, upsert_block
 from relay_ai.content import Agent
+from relay_ai.platforms import Platform
 
-COPILOT_INSTRUCTIONS = Path('.github') / 'copilot-instructions.md'
 SECTION_END = '<!-- relay-ai:end -->'
 SECTION_START = '<!-- relay-ai:start -->'
 SECTION_TEMPLATE = """{start}
@@ -24,16 +24,21 @@ a `**Specialist:**` line, delegate its implementation to that agent as a subagen
 """
 
 
-def remove_specialists_section(project: Path) -> bool:
-    return remove_block(project / COPILOT_INSTRUCTIONS, SECTION_START, SECTION_END)
+def has_specialists_section(project: Path, platform: Platform) -> bool:
+    return bool(read_block(project / platform.instructions_file, SECTION_START, SECTION_END))
 
 
-def write_specialists_section(project: Path, agents: list[Agent]) -> None:
+def remove_specialists_section(project: Path, platform: Platform) -> bool:
+    return remove_block(project / platform.instructions_file, SECTION_START, SECTION_END)
+
+
+def write_specialists_section(project: Path, platform: Platform, agents: list[Agent]) -> None:
     if not agents:
-        remove_specialists_section(project)
+        remove_specialists_section(project, platform)
         return
 
-    console.info(f'Registering specialist agents in {COPILOT_INSTRUCTIONS.as_posix()}...')
+    instructions = platform.instructions_file.as_posix()
+    console.info(f'Registering specialist agents in {instructions}...')
     agent_lines = '\n'.join(f'- `{agent.name}`: {agent.description}' for agent in agents)
     section = SECTION_TEMPLATE.format(agents=agent_lines, end=SECTION_END, start=SECTION_START)
-    upsert_block(project / COPILOT_INSTRUCTIONS, SECTION_START, SECTION_END, section)
+    upsert_block(project / platform.instructions_file, SECTION_START, SECTION_END, section)

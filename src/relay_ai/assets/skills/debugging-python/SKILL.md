@@ -1,6 +1,6 @@
 ---
 name: debugging-python
-description: Python debugging toolkit that makes you observe the real data at the point of failure, with the VS Code debugger through DebugMCP, instead of inferring it, while spending as few tokens as possible. Use whenever you debug Python code (exceptions, failing tests, wrong output, hangs, slowness), together with the diagnosing-bugs skill.
+description: Python debugging toolkit that makes you observe the real data at the point of failure, with a real debugger (mcp-debugger), instead of inferring it, while spending as few tokens as possible. Use whenever you debug Python code (exceptions, failing tests, wrong output, hangs, slowness), together with the diagnosing-bugs skill.
 ---
 
 # Debugging Python
@@ -30,26 +30,24 @@ do with the bug.
 - **Keep command output short:** run the single failing test (`pytest path::test -x -q
   --tb=short`), not the whole suite; cut long output (`| head -n 40`) and widen only if needed.
 
-## The debugger: DebugMCP
+## The debugger: mcp-debugger
 
-When the `debugmcp` tools are available (VS Code with the DebugMCP extension), use the
-debugger to observe values. Read [debugger.md](debugger.md) for the tools and how to use them
-sparingly. In short:
+When the `mcp-debugger` tools are available, use the debugger to observe values. It runs
+locally (no IDE needed) and drives `debugpy`. Read [debugger.md](debugger.md) for how to
+start a session and use the tools sparingly. In short:
 
 1. Start from the red-capable command of `diagnosing-bugs` Phase 1, ideally one pytest test.
-2. Put a breakpoint where your hypotheses diverge, with a condition whenever the line runs
-   more than once.
-3. Start a debug session for that test or script.
-4. When it stops: list variable names and types first, then evaluate projections, and fetch
-   full values only when they are small.
+2. Run that command under a temporary `debugpy` that waits for the debugger, in the
+   background, without adding `debugpy` to the project's dependencies.
+3. Attach to it, then put a breakpoint where your hypotheses diverge, with a condition
+   whenever the line runs more than once.
+4. When it stops: look at variable names and types first, then evaluate projections, and
+   fetch full values only when they are small.
 5. Step only through the suspicious region; otherwise continue to the next breakpoint.
-6. At the end, stop the session and clear every breakpoint you added.
+6. At the end, remove your breakpoints and close the session.
 
-The breakpoints you add show up in the developer's editor, so tell them where you are
-stopping and why: they can follow along.
-
-**If DebugMCP is not available**, say so once and point the developer to it (the project
-recommends the extension in `.vscode/extensions.json`). Then fall back to temporary prints of
+**If the debugger is not available**, say so once (RelayAI configures `mcp-debugger` in the
+project's MCP settings; it needs Node.js 22+). Then fall back to temporary prints of
 **projections**, never of whole objects, tagged with a unique prefix such as `[DEBUG-a4f2]`
 so cleanup is a single grep.
 

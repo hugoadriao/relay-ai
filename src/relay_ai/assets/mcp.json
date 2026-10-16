@@ -1,15 +1,12 @@
 {
   "servers": {
-    "debugmcp": {
-      "type": "http",
-      "url": "http://localhost:3001/mcp"
-    },
     "docs-langchain": {
-      "type": "http",
       "url": "https://docs.langchain.com/mcp"
     },
+    "mcp-debugger": {
+      "command": ["npx", "-y", "@debugmcp/mcp-debugger@0.25.1", "stdio"]
+    },
     "reference-langchain": {
-      "type": "http",
       "url": "https://reference.langchain.com/mcp"
     }
   }
