@@ -157,6 +157,47 @@ the application layer. Don't build it into nodes.
   `handle_tool_error`; the result is a `ToolMessage` with `status="error"`, which routing
   logic checks. Handle errors in one layer, never by matching text prefixes.
 
+### Prompts
+
+The documentation sets no file format: `create_agent` takes a ready `system_prompt` (`str`
+or `SystemMessage`), and the LangChain file loader (`load_prompt`, YAML/JSON) is
+deprecated.
+
+Before writing or changing a prompt, analyse how the project organises its prompts: where
+they live, how they are loaded, and how variables are filled in. If there is one consistent
+convention that breaks none of the rules below, follow it. If there is none, if several
+coexist (constants, files, class attributes, f-strings and `.format()` side by side), or if
+the convention itself breaks these rules, say so and propose the pattern below as the
+project's single convention, as "The standard you hold the code to" sets out for a pattern
+that is itself an anti-pattern: a defect that reaches the model (doubled braces, a missing variable) is fixed in the
+code you touch; moving the other prompts is proposed with its cost and done only with the
+developer's agreement, incrementally. The pattern:
+
+- **One Markdown file per prompt**, next to the agent or tool that uses it. Prompts are
+  prose: as files they diff cleanly, can be reviewed by people who don't read Python, and
+  carry no leading indentation into the tokens, as indented triple-quoted strings do.
+- **Loaded once, at build time.** Read prompts with `importlib.resources` in the graph
+  factory, never at import time and never on every call.
+- **One placeholder mechanism.** Render with `PromptTemplate`/`ChatPromptTemplate`, which
+  fail on a missing variable. When the text contains JSON examples, use
+  `template_format='mustache'`: with f-string syntax the JSON braces become variables (or a
+  `KeyError` with `str.format`). Never Python f-strings for prompts, and never mix f-strings
+  with a later `.format()`: escapes double up and reach the model (a real case: `{{{{` in an
+  f-string example made the model see `{{ "task_id": 1 }}` — invalid JSON in the very
+  format it was asked to produce).
+- **Build-time vs run-time parts.** Fixed values (agent names from the registry, a glossary)
+  are filled in once in the factory. What changes per run (user, conversation, current
+  plan) goes in a `@dynamic_prompt` middleware reading `request.runtime.context` or
+  `request.state`, not in string concatenation inside nodes.
+- **Data is not prompt.** Tables and business rules (CSV, database) are loaded as data and
+  passed to the template; a prompt module never imports agents or reads files on import.
+- **Tool description ≠ instructions.** A tool's description tells the model when to call it;
+  the instructions for the work inside the tool are a separate prompt.
+- **A test renders every prompt** with its real inputs and checks that no placeholder and
+  no doubled brace is left.
+- **Remote prompt management** (LangSmith Prompt Hub: versions by commit or tag, cached
+  pulls) is a hosted service: use it only if the project already adopted it.
+
 ### Artifacts and large data
 
 - **`content_and_artifact`: a summary for the model, a small reference for the code.** With
@@ -265,7 +306,10 @@ purpose, in the code you are touching and in the code it depends on.
    - tools that work out their input from the state or call order ("the first artifact",
      "the last tool message") instead of taking it as a parameter;
    - an id chosen by the model used to fetch data without checking it against the
-     conversation's own catalog.
+     conversation's own catalog;
+   - prompts built with f-strings or several placeholder mechanisms at once, prompt
+     modules with import-time side effects (importing agents, reading files), and prompts
+     read from disk on every call.
 
 ### The standard you hold the code to
 
