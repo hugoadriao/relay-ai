@@ -9,10 +9,12 @@ from importlib.resources import as_file, files
 from importlib.resources.abc import Traversable
 from pathlib import Path
 
+import yaml
+
 from relay_ai import console
 from relay_ai.errors import SetupError
+from relay_ai.platforms import COPILOT, Platform
 
-AGENT_SUFFIX = '.agent.md'
 MATTPOCOCK_CATEGORIES = ('engineering', 'productivity')
 MATTPOCOCK_REF = 'main'
 MATTPOCOCK_ZIP_URL = (
@@ -24,8 +26,8 @@ SKILL_FILE = 'SKILL.md'
 @dataclass(frozen=True)
 class Agent:
     description: str
-    file_name: str
     name: str
+    path: Path
 
 
 def asset(name: str) -> Traversable:
@@ -52,21 +54,21 @@ def install_mattpocock_skills(target: Path, owned: set[str]) -> list[str]:
     return installed
 
 
-def install_relay_agents(target: Path, owned: set[str]) -> list[Agent]:
+def install_relay_agents(project: Path, platform: Platform, owned: set[str]) -> list[Agent]:
     source = asset('agents')
     if not source.is_dir():
         return []
 
     installed = []
     with as_file(source) as agents_dir:
-        agent_files = sorted(agents_dir.glob(f'*{AGENT_SUFFIX}'))
-        if agent_files:
-            target.mkdir(parents=True, exist_ok=True)
-        for agent_file in agent_files:
-            if not _can_replace(target / agent_file.name, owned):
+        for agent_file in sorted(agents_dir.glob('*.md')):
+            agent = _read_agent(agent_file, platform)
+            destination = project / agent.path
+            if not _can_replace(destination, owned):
                 continue
-            shutil.copy2(agent_file, target / agent_file.name)
-            installed.append(_read_agent(agent_file))
+            destination.parent.mkdir(parents=True, exist_ok=True)
+            destination.write_text(_render_agent(agent_file, platform), encoding='utf-8')
+            installed.append(agent)
     return installed
 
 
@@ -83,6 +85,11 @@ def install_relay_skills(target: Path, owned: set[str]) -> list[str]:
             _replace_dir(skill, target / skill.name)
             installed.append(skill.name)
     return installed
+
+
+def remove_if_empty(directory: Path) -> None:
+    if directory.is_dir() and not any(directory.iterdir()):
+        directory.rmdir()
 
 
 def remove_installed(path: Path) -> None:
@@ -110,27 +117,22 @@ def _download(url: str) -> bytes:
         raise SetupError(f'could not download {url}') from err
 
 
-def _frontmatter(text: str) -> dict[str, str]:
-    lines = text.splitlines()
-    if not lines or lines[0].strip() != '---':
-        return {}
-
-    fields = {}
-    for line in lines[1:]:
-        if line.strip() == '---':
-            break
-        key, separator, value = line.partition(':')
-        if separator and not line.startswith((' ', '\t')):
-            fields[key.strip()] = value.strip().strip('\'"')
-    return fields
+def _read_agent(agent_file: Path, platform: Platform) -> Agent:
+    frontmatter, _ = _split_frontmatter(agent_file)
+    if not frontmatter.get('name') or not frontmatter.get('description'):
+        raise SetupError(f'agent {agent_file.name} needs a name and a description')
+    path = platform.agents_dir / f'{frontmatter["name"]}{platform.agent_suffix}'
+    return Agent(description=frontmatter['description'], name=frontmatter['name'], path=path)
 
 
-def _read_agent(agent_file: Path) -> Agent:
-    fields = _frontmatter(agent_file.read_text(encoding='utf-8'))
-    if not fields.get('description'):
-        raise SetupError(f'agent {agent_file.name} has no description in its frontmatter')
-    name = fields.get('name') or agent_file.name.removesuffix(AGENT_SUFFIX)
-    return Agent(description=fields['description'], file_name=agent_file.name, name=name)
+def _render_agent(agent_file: Path, platform: Platform) -> str:
+    frontmatter, body = _split_frontmatter(agent_file)
+    common = {'description': frontmatter['description']}
+    if platform is COPILOT:
+        common = {'name': frontmatter['name'], **common}
+    rendered = {**common, **frontmatter.get(platform.name, {})}
+    header = yaml.safe_dump(rendered, allow_unicode=True, sort_keys=False, width=10_000)
+    return f'---\n{header}---\n{body}'
 
 
 def _replace_dir(source: Path, destination: Path) -> None:
@@ -143,3 +145,9 @@ def _skill_dirs(root: Path) -> list[Path]:
     if not root.is_dir():
         raise SetupError(f'skills folder not found: {root}')
     return sorted(path for path in root.iterdir() if (path / SKILL_FILE).is_file())
+
+
+def _split_frontmatter(agent_file: Path) -> tuple[dict, str]:
+    text = agent_file.read_text(encoding='utf-8').replace('\r\n', '\n')
+    _, header, body = text.split('---\n', 2)
+    return yaml.safe_load(header), body

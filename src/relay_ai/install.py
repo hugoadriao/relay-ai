@@ -3,10 +3,10 @@ from pathlib import Path
 
 from relay_ai import console
 from relay_ai.content import (
-    AGENT_SUFFIX,
     install_mattpocock_skills,
     install_relay_agents,
     install_relay_skills,
+    remove_if_empty,
     remove_installed,
 )
 from relay_ai.errors import SetupError
@@ -16,22 +16,39 @@ from relay_ai.git import (
     is_git_repository,
     modified_tracked_files,
 )
-from relay_ai.graphify import GRAPHIFY_IGNORE_FILE, configure_project, ensure_graphify
-from relay_ai.instructions import COPILOT_INSTRUCTIONS, write_specialists_section
-from relay_ai.manifest import MANIFEST_FILE, Manifest, load_manifest, save_manifest
-from relay_ai.vscode import (
-    EXTENSIONS_CONFIG,
-    MCP_CONFIG,
-    add_extension_recommendations,
-    add_mcp_servers,
-    managed_extensions,
-    managed_mcp_servers,
+from relay_ai.graphify import (
+    GRAPHIFY_IGNORE_FILE,
+    configure_project,
+    ensure_graphify,
+    remove_from_graphify_ignore,
 )
+from relay_ai.instructions import remove_specialists_section, write_specialists_section
+from relay_ai.jsonfile import is_empty_config
+from relay_ai.manifest import MANIFEST_FILE, Manifest, load_manifest, save_manifest
+from relay_ai.mcp import (
+    add_mcp_servers,
+    legacy_server_key,
+    managed_server_keys,
+    remove_mcp_servers,
+)
+from relay_ai.platforms import COPILOT, PLATFORMS, Platform
+from relay_ai.prerequisites import check_node
 from relay_ai.windows import check_path_length
 
-AGENTS_DIR = Path('.github') / 'agents'
-SHARED_FILES = (COPILOT_INSTRUCTIONS, EXTENSIONS_CONFIG, MCP_CONFIG, Path(GRAPHIFY_IGNORE_FILE))
-SKILLS_DIR = Path('.github') / 'skills'
+AGENTS_FILE = Path('AGENTS.md')
+CLAUDE_FILE = Path('CLAUDE.md')
+LEGACY_SKILLS_DIR = Path('.github') / 'skills'
+SKILLS_DIR = Path('.agents') / 'skills'
+SHARED_FILES = tuple(
+    dict.fromkeys(
+        [
+            AGENTS_FILE,
+            Path(GRAPHIFY_IGNORE_FILE),
+            *[platform.instructions_file for platform in PLATFORMS],
+            *[platform.mcp_config for platform in PLATFORMS],
+        ]
+    )
+)
 
 
 @dataclass(frozen=True)
@@ -41,58 +58,86 @@ class Changes:
     updated: list[str]
 
 
-def install(project: Path, update: bool) -> Changes:
+def install(project: Path, platforms: list[Platform] | None, update: bool) -> Changes:
     if not project.is_dir():
         raise SetupError(f'project folder not found: {project}')
     check_path_length(project)
+    check_node()
 
     previous = installed_manifest(project)
     if update and previous is None:
         raise SetupError('RelayAI is not installed in this project: run `relay-ai init` first.')
     previous = previous or Manifest()
+    platforms = platforms or [p for p in PLATFORMS if p.name in previous.platforms]
+    if not platforms:
+        raise SetupError('choose a platform with --platform copilot|opencode|both')
 
-    console.info(f'{"Updating" if update else "Setting up"} RelayAI in {project}')
+    names = ', '.join(platform.label for platform in platforms)
+    console.info(f'{"Updating" if update else "Setting up"} RelayAI in {project} for {names}')
     graphify = ensure_graphify()
     preexisting = [
         path
         for path in SHARED_FILES
         if (project / path).exists() and path.as_posix() not in previous.created_files
     ]
+    if not (project / AGENTS_FILE).exists() and not (project / CLAUDE_FILE).exists():
+        console.info(f'Creating {AGENTS_FILE} (the instructions file Copilot and OpenCode read)...')
+        (project / AGENTS_FILE).touch()
 
-    agents = install_relay_agents(project / AGENTS_DIR, set(previous.agents))
-    write_specialists_section(project, agents)
-    mcp_servers = add_mcp_servers(project)
-    extensions = add_extension_recommendations(project)
+    agents = []
+    mcp_servers = []
+    for platform in platforms:
+        owned = _owned_names(previous.agents, platform.agents_dir)
+        platform_agents = install_relay_agents(project, platform, owned)
+        write_specialists_section(project, platform, platform_agents)
+        agents += [agent.path.as_posix() for agent in platform_agents]
+        mcp_servers += add_mcp_servers(project, platform)
+    for platform in PLATFORMS:
+        if platform not in platforms:
+            remove_specialists_section(project, platform)
 
     skills_dir = project / SKILLS_DIR
     skills_dir.mkdir(parents=True, exist_ok=True)
-    skills = install_relay_skills(skills_dir, set(previous.skills))
-    skills += install_mattpocock_skills(skills_dir, set(previous.skills))
-    agent_files = [agent.file_name for agent in agents]
-    stale = [SKILLS_DIR / skill for skill in previous.skills if skill not in skills]
-    stale += [AGENTS_DIR / agent for agent in previous.agents if agent not in agent_files]
-    for path in stale:
-        remove_installed(project / path)
+    owned = _owned_names(previous.skills, SKILLS_DIR)
+    skill_names = install_relay_skills(skills_dir, owned)
+    skill_names += install_mattpocock_skills(skills_dir, owned)
+    skills = [(SKILLS_DIR / name).as_posix() for name in skill_names]
 
-    graphify_ignore = configure_project(graphify, project, [AGENTS_DIR, SKILLS_DIR])
+    for path in [path for path in previous.agents + previous.skills if path not in agents + skills]:
+        remove_installed(project / path)
+    managed_servers = managed_server_keys(platforms)
+    remove_mcp_servers(project, [key for key in previous.mcp_servers if key not in managed_servers])
+    for path in previous.created_files:
+        if path.endswith('.json') and is_empty_config(project / path):
+            (project / path).unlink()
+    for directory in [LEGACY_SKILLS_DIR, *[platform.agents_dir for platform in PLATFORMS]]:
+        remove_if_empty(project / directory)
+
+    ignored_dirs = [platform.agents_dir for platform in platforms] + [SKILLS_DIR]
+    patterns = {f'{ignored_dir.as_posix()}/' for ignored_dir in ignored_dirs}
+    remove_from_graphify_ignore(
+        project, [pattern for pattern in previous.graphify_ignore if pattern not in patterns]
+    )
+    graphify_ignore = configure_project(graphify, project, platforms, ignored_dirs)
 
     created = [
         path for path in SHARED_FILES if path not in preexisting and (project / path).exists()
     ]
     manifest = Manifest(
-        agents=agent_files,
+        agents=agents,
         created_files=[path.as_posix() for path in created],
-        extensions=previous.extensions + extensions,
-        graphify_ignore=previous.graphify_ignore + graphify_ignore,
-        mcp_servers=previous.mcp_servers + mcp_servers,
+        graphify_ignore=[pattern for pattern in previous.graphify_ignore if pattern in patterns]
+        + graphify_ignore,
+        mcp_servers=[key for key in previous.mcp_servers if key in managed_servers] + mcp_servers,
+        platforms=[platform.name for platform in platforms],
         skills=skills,
     )
     save_manifest(project, manifest)
 
     if is_git_repository(project):
-        installed = [AGENTS_DIR / agent for agent in agent_files]
-        installed += [SKILLS_DIR / skill for skill in skills]
-        exclude_from_git(project, installed + created + [MANIFEST_FILE])
+        exclude_from_git(
+            project, [Path(path) for path in agents + skills] + created + [MANIFEST_FILE]
+        )
         for changed in modified_tracked_files(project, preexisting):
             console.warn(
                 f'{changed} is tracked by git and was changed by RelayAI; review the diff and '
@@ -110,31 +155,41 @@ def install(project: Path, update: bool) -> Changes:
 
 def installed_manifest(project: Path) -> Manifest | None:
     manifest = load_manifest(project)
-    if manifest is not None or not is_git_repository(project):
-        return manifest
-
-    excluded = excluded_paths(project)
-    if not excluded:
-        return None
-    return _legacy_manifest(project, excluded)
+    if manifest is None and is_git_repository(project):
+        excluded = excluded_paths(project)
+        manifest = _legacy_manifest(excluded) if excluded else None
+    return _upgrade(manifest) if manifest is not None else None
 
 
 def _labels(manifest: Manifest) -> list[str]:
-    agents = [f'agent {agent.removesuffix(AGENT_SUFFIX)}' for agent in manifest.agents]
-    return agents + [f'skill {skill}' for skill in manifest.skills]
+    agents = [f'agent {Path(path).name}' for path in manifest.agents]
+    return agents + [f'skill {Path(path).name}' for path in manifest.skills]
 
 
-def _legacy_manifest(project: Path, excluded: list[Path]) -> Manifest:
-    ignore_file = project / GRAPHIFY_IGNORE_FILE
-    graphify_ignore = (
-        ignore_file.read_text(encoding='utf-8').splitlines() if ignore_file.exists() else []
-    )
-    patterns = [f'{AGENTS_DIR.as_posix()}/', f'{SKILLS_DIR.as_posix()}/']
+def _legacy_manifest(excluded: list[Path]) -> Manifest:
     return Manifest(
-        agents=[path.name for path in excluded if path.parent == AGENTS_DIR],
+        agents=[path.as_posix() for path in excluded if path.parent == COPILOT.agents_dir],
         created_files=[path.as_posix() for path in excluded if path in SHARED_FILES],
-        extensions=managed_extensions(),
-        graphify_ignore=[pattern for pattern in patterns if pattern in graphify_ignore],
-        mcp_servers=managed_mcp_servers(),
-        skills=[path.name for path in excluded if path.parent == SKILLS_DIR],
+        graphify_ignore=[f'{COPILOT.agents_dir.as_posix()}/', f'{LEGACY_SKILLS_DIR.as_posix()}/'],
+        mcp_servers=['docs-langchain', 'reference-langchain'],
+        skills=[path.as_posix() for path in excluded if path.parent == LEGACY_SKILLS_DIR],
     )
+
+
+def _owned_names(paths: list[str], directory: Path) -> set[str]:
+    return {Path(path).name for path in paths if Path(path).parent == directory}
+
+
+def _upgrade(manifest: Manifest) -> Manifest:
+    return Manifest(
+        agents=[_with_dir(path, COPILOT.agents_dir) for path in manifest.agents],
+        created_files=manifest.created_files,
+        graphify_ignore=manifest.graphify_ignore,
+        mcp_servers=[legacy_server_key(key) for key in manifest.mcp_servers],
+        platforms=manifest.platforms or [COPILOT.name],
+        skills=[_with_dir(path, LEGACY_SKILLS_DIR) for path in manifest.skills],
+    )
+
+
+def _with_dir(path: str, directory: Path) -> str:
+    return path if '/' in path else (directory / path).as_posix()

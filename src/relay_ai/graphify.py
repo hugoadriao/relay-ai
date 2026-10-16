@@ -4,6 +4,7 @@ from pathlib import Path
 from relay_ai import console
 from relay_ai.errors import SetupError
 from relay_ai.git import is_git_repository
+from relay_ai.platforms import Platform
 from relay_ai.process import capture, run
 from relay_ai.textfile import line_ending, read_text, write_text
 
@@ -12,12 +13,15 @@ GRAPHIFY_PACKAGE = 'graphifyy'
 UV_INSTALL_URL = 'https://docs.astral.sh/uv/getting-started/installation/'
 
 
-def configure_project(executable: str, project: Path, ignored_dirs: list[Path]) -> list[str]:
+def configure_project(
+    executable: str, project: Path, platforms: list[Platform], ignored_dirs: list[Path]
+) -> list[str]:
     patterns = [f'{ignored_dir.as_posix()}/' for ignored_dir in ignored_dirs]
     added = [pattern for pattern in patterns if _add_to_graphify_ignore(project, pattern)]
 
-    console.info('Configuring Graphify for VS Code Copilot Chat...')
-    run([executable, 'vscode', 'install'], cwd=project)
+    for platform in platforms:
+        console.info(f'Configuring Graphify for {platform.label}...')
+        run([executable, *platform.graphify_install], cwd=project)
 
     if is_git_repository(project):
         console.info('Installing Graphify git hooks (graph updates on every commit)...')
@@ -65,16 +69,16 @@ def remove_from_graphify_ignore(project: Path, patterns: list[str]) -> None:
     write_text(ignore_file, ''.join(kept), line_ending(content))
 
 
-def uninstall_from_project(project: Path) -> None:
+def uninstall_from_project(project: Path, platforms: list[Platform]) -> None:
     executable = shutil.which('graphify')
     if executable is None:
         console.warn('Graphify not found on PATH: its project setup was left in place.')
         return
 
-    console.info('Removing Graphify from VS Code Copilot Chat in this project...')
-    run([executable, 'vscode', 'uninstall'], cwd=project)
-    console.info('Restoring the machine-wide Graphify skill other projects rely on...')
-    run([executable, 'copilot', 'install'], cwd=project)
+    for platform in platforms:
+        console.info(f'Removing Graphify from {platform.label} in this project...')
+        for command in platform.graphify_uninstall:
+            run([executable, *command], cwd=project)
     if is_git_repository(project):
         console.info('Removing Graphify git hooks...')
         run([executable, 'hook', 'uninstall'], cwd=project)

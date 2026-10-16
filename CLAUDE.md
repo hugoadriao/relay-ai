@@ -1,7 +1,7 @@
 # RelayAI
 
 Instalador por projeto (`uvx ... relay-ai init`) de agentes e skills para o GitHub Copilot
-no VS Code: escopo e interrogação do desenvolvedor antes de qualquer código ser escrito
+(VS Code) e o OpenCode: escopo e interrogação do desenvolvedor antes de qualquer código ser escrito
 (via mattpocock/skills), com descoberta de projeto assistida por um grafo de conhecimento
 local (Graphify).
 
@@ -28,9 +28,10 @@ As seções "Planejado" e "Em aberto" do `SCOPE.md` são o trabalho pendente mai
 ## Desenvolvimento da CLI
 
 - Código em `src/relay_ai/` (Python ≥ 3.12, ruff com 100 colunas e aspas simples).
-- Conteúdo próprio em `src/relay_ai/assets/agents/` e `src/relay_ai/assets/skills/` (#16).
+- Conteúdo próprio em `src/relay_ai/assets/agents/` (fonte única por agente, #30) e
+  `src/relay_ai/assets/skills/` (#16). As diferenças entre plataformas ficam em `platforms.py`.
 - Comandos: `init`, `update` e `uninstall` (#29); `install.py` cobre `init`/`update`.
-- Testar ponta a ponta: `uvx --no-cache --from . relay-ai init <pasta-de-teste>` (sem
+- Testar ponta a ponta: `uvx --no-cache --from . relay-ai init <pasta-de-teste> --platform both` (sem
   `--no-cache`, o uv reaproveita a build anterior enquanto a versão não muda) — nunca rode
   o `init` dentro deste repositório, ele escreve `.github/` e `graphify-out/` no destino.
 
