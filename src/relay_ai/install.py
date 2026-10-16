@@ -36,6 +36,7 @@ from relay_ai.prerequisites import check_node
 from relay_ai.windows import check_path_length
 
 AGENTS_FILE = Path('AGENTS.md')
+AUDITS_DIR = Path('docs') / 'audits'
 CLAUDE_FILE = Path('CLAUDE.md')
 LEGACY_SKILLS_DIR = Path('.github') / 'skills'
 SKILLS_DIR = Path('.agents') / 'skills'
@@ -113,7 +114,7 @@ def install(project: Path, platforms: list[Platform] | None, update: bool) -> Ch
     for directory in [LEGACY_SKILLS_DIR, *[platform.agents_dir for platform in PLATFORMS]]:
         remove_if_empty(project / directory)
 
-    ignored_dirs = [platform.agents_dir for platform in platforms] + [SKILLS_DIR]
+    ignored_dirs = [platform.agents_dir for platform in platforms] + [SKILLS_DIR, AUDITS_DIR]
     patterns = {f'{ignored_dir.as_posix()}/' for ignored_dir in ignored_dirs}
     remove_from_graphify_ignore(
         project, [pattern for pattern in previous.graphify_ignore if pattern not in patterns]

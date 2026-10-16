@@ -87,8 +87,9 @@ Then:
    - adds the MCP servers the agents use to the platform's config (`.vscode/mcp.json` or
      `opencode.json`), keeping the entries you already had.
 4. Sets Graphify up exactly as it's designed to work:
-   - adds RelayAI's agent and skill folders to `.graphifyignore`, so the graph describes
-     your code, not the installed agents and skills (existing lines are kept);
+   - adds RelayAI's agent and skill folders and `docs/audits/` to `.graphifyignore`, so
+     the graph describes your code, not the installed agents and skills or old audit
+     reports (existing lines are kept);
    - connects Graphify to each platform (`graphify vscode install` / `graphify opencode
      install`), so the agents always check the knowledge graph before answering questions
      about your code;
@@ -209,6 +210,14 @@ falls back to temporary, targeted prints.
   instead of guessing, while keeping token use low: shape before values, projections
   instead of dumping large objects, conditional breakpoints. The debugger runs locally and
   sends nothing out of your machine.
+- **`auditing-langgraph`** (RelayAI) — audits how your application uses LangGraph and
+  LangChain against the `langgraph-expert` rules. Run `/auditing-langgraph` (optionally
+  with a folder) or ask the agent to audit the LangGraph architecture. It only reads the
+  code, starting from the Graphify graph, and writes an English report to
+  `docs/audits/langgraph-<date>.md`: an inventory of graphs, agents, tools and prompts,
+  then one finding per wrong pattern, with its occurrences, the target pattern, its
+  cost and what it depends on, compared with the previous audit. Each finding is ready
+  to plan with `/to-spec` and `/to-tickets`.
 
 Coming next from RelayAI itself: a FastAPI specialist agent.
 
