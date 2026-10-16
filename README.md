@@ -194,11 +194,13 @@ falls back to temporary, targeted prints.
   See its README for the full list.
 - Project discovery through Graphify's knowledge graph, kept up to date by its git hooks.
 - **`langgraph-expert`** (RelayAI) — a LangGraph specialist agent for async
-  Python/FastAPI projects. Pick it in the agent picker (Copilot) or call it with
+  Python/FastAPI projects, covering the LangChain agents, tools and middleware graphs are
+  built from. Pick it in the agent picker (Copilot) or call it with
   `@langgraph-expert` (OpenCode), or let `/implement` and `/implement-spec` delegate
   LangGraph tickets to it (tickets get a `**Specialist:** langgraph-expert` line from
   `/to-tickets`). It checks the live LangGraph docs before using an API, works test-first,
-  and calls out anti-patterns plainly — symptomatic fixes, dead or redundant code,
+  builds async, stateless nodes and tools that are safe with many concurrent users, and
+  calls out anti-patterns plainly — symptomatic fixes, dead or redundant code,
   over-engineering, LangGraph misuse — with a simpler way to build the feature.
 - **`debugging-python`** (RelayAI) — a Python debugging skill the agent loads on its own
   when debugging, alongside `diagnosing-bugs`. It makes the agent observe the real values
