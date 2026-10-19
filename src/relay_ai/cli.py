@@ -4,6 +4,7 @@ from pathlib import Path
 
 from relay_ai import console
 from relay_ai.errors import SetupError
+from relay_ai.graphify import GRAPHIFY_GRAPH_FILE
 from relay_ai.install import Changes, install, installed_manifest
 from relay_ai.platforms import PLATFORMS, Platform, platforms_named
 from relay_ai.uninstall import uninstall
@@ -66,7 +67,7 @@ def _init_platforms(args: argparse.Namespace, project: Path) -> list[Platform] |
     return _ask_platforms()
 
 
-def _next_steps(platforms: list[str]) -> None:
+def _next_steps(project: Path, platforms: list[str]) -> None:
     if 'copilot' in platforms:
         console.info(
             'VS Code: run "Developer: Reload Window" so it loads the agents, skills and MCP '
@@ -74,6 +75,11 @@ def _next_steps(platforms: list[str]) -> None:
         )
     if 'opencode' in platforms:
         console.info('OpenCode: restart it so it loads the agents, skills and MCP servers.')
+    if not (project / GRAPHIFY_GRAPH_FILE).exists():
+        console.info(
+            "Next, build the knowledge graph: type `/graphify .` in the chat. Graphify's git "
+            'hooks keep it up to date after that.'
+        )
 
 
 def _report_update(changes: Changes) -> None:
@@ -101,7 +107,8 @@ def _run(args: argparse.Namespace) -> None:
         _report_update(changes)
     else:
         install(project, platforms=_init_platforms(args, project), update=False)
-        console.info('Next, run /setup-matt-pocock-skills once for this repository.')
     manifest = installed_manifest(project)
-    _next_steps(manifest.platforms if manifest is not None else [])
+    _next_steps(project, manifest.platforms if manifest is not None else [])
+    if args.command == 'init':
+        console.info('Then run /setup-matt-pocock-skills once for this repository.')
     console.info('Done.')
