@@ -58,7 +58,16 @@ Then:
    - VS Code: run **Developer: Reload Window** from the Command Palette. Agents, skills and
      MCP servers only show up after the reload.
    - OpenCode: restart it.
-2. Once per repository, in the chat, run:
+2. Build the knowledge graph. In the chat, run:
+
+   ```
+   /graphify .
+   ```
+
+   Graphify reads your code and docs and writes the graph to `graphify-out/`. RelayAI
+   doesn't build it for you; after this first build, Graphify's git hooks keep it up
+   to date.
+3. Once per repository, in the chat, run:
 
    ```
    /setup-matt-pocock-skills
@@ -67,7 +76,7 @@ Then:
    It asks how your project tracks issues and where its docs live, and saves that to
    `AGENTS.md`, which both Copilot and OpenCode read. `init` creates an empty `AGENTS.md`
    for this when your project has neither `AGENTS.md` nor `CLAUDE.md`.
-3. The first time an MCP server starts, your editor may ask you to trust it.
+4. The first time an MCP server starts, your editor may ask you to trust it.
 
 ### What `relay-ai init` does
 
@@ -87,16 +96,19 @@ Then:
      every agent to the `writing-python` style;
    - adds the MCP servers the agents use to the platform's config (`.vscode/mcp.json` or
      `opencode.json`), keeping the entries you already had.
-4. Sets Graphify up exactly as it's designed to work:
+4. Sets Graphify up for the platforms you chose, exactly as it's designed to work:
    - adds RelayAI's agent and skill folders and `docs/audits/` to `.graphifyignore`, so
      the graph describes your code, not the installed agents and skills or old audit
      reports (existing lines are kept);
-   - connects Graphify to each platform (`graphify vscode install` / `graphify opencode
-     install`), so the agents always check the knowledge graph before answering questions
-     about your code;
+   - connects Graphify to each platform, which also installs its `/graphify` skill:
+     `graphify vscode install` for Copilot and `graphify install --platform opencode`
+     for OpenCode (Graphify puts the OpenCode skill in your user's OpenCode config,
+     `~/.config/opencode/skills/graphify/`, and a plugin in `.opencode/plugins/`), so the
+     agents check the knowledge graph before answering questions about your code;
    - `graphify hook install` — git hooks that update the graph on every commit and branch
-     checkout (skipped if the project isn't a git repository);
-   - `graphify update .` — builds the initial code graph (no LLM needed).
+     checkout once it exists (skipped if the project isn't a git repository).
+
+   It does not build the graph: you do, with `/graphify .` (see above).
 5. Keeps what it installed out of git: the agents and skills, plus the files it created
    (including `AGENTS.md`), are listed in `.git/info/exclude`, which is local to your clone,
    so not even that list shows up in git. Graphify's own files (`graphify-out/`,

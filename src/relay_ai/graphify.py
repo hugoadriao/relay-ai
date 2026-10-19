@@ -8,6 +8,7 @@ from relay_ai.platforms import Platform
 from relay_ai.process import capture, run
 from relay_ai.textfile import line_ending, read_text, write_text
 
+GRAPHIFY_GRAPH_FILE = Path('graphify-out') / 'graph.json'
 GRAPHIFY_IGNORE_FILE = '.graphifyignore'
 GRAPHIFY_PACKAGE = 'graphifyy'
 UV_INSTALL_URL = 'https://docs.astral.sh/uv/getting-started/installation/'
@@ -31,9 +32,6 @@ def configure_project(
             'Not a git repository: skipping `graphify hook install`, so the graph will not '
             'update automatically. Run it after `git init`.'
         )
-
-    console.info('Building the initial code graph...')
-    run([executable, 'update', '.'], cwd=project)
     return added
 
 
