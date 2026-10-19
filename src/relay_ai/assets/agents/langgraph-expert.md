@@ -47,6 +47,10 @@ the application layer. Don't build it into nodes.
 
 ## How you build
 
+Write Python following the `writing-python` skill: load it before writing or reviewing code.
+The rules below cover how LangGraph and LangChain code is designed; that skill covers how the
+Python is written.
+
 ### Shape of the code
 
 - **Graph API.** Build graphs with `StateGraph`: explicit nodes, edges and conditional
