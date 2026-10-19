@@ -83,7 +83,8 @@ Then:
      Copilot, `.opencode/agents/*.md` for OpenCode);
    - lists the specialist agents in a `relay-ai` section of the platform's instructions
      file (`.github/copilot-instructions.md` for Copilot, `AGENTS.md` for OpenCode), so
-     ticket-writing and implementation skills route specialist work to them;
+     ticket-writing and implementation skills route specialist work to them, and points
+     every agent to the `writing-python` style;
    - adds the MCP servers the agents use to the platform's config (`.vscode/mcp.json` or
      `opencode.json`), keeping the entries you already had.
 4. Sets Graphify up exactly as it's designed to work:
@@ -210,6 +211,12 @@ falls back to temporary, targeted prints.
   instead of guessing, while keeping token use low: shape before values, projections
   instead of dumping large objects, conditional breakpoints. The debugger runs locally and
   sends nothing out of your machine.
+- **`writing-python`** (RelayAI) — the default Python code style every agent writes and
+  reviews with: code in English, ruff with 100 columns and single quotes, absolute imports,
+  mandatory native type hints (PEP 695 generics on 3.12+), no comments explaining code,
+  fail-fast exceptions caught only at the edge. It lists the ruff rules that check it and
+  proposes them when your project has no ruff configuration. Your project's own ruff
+  settings, Python version and documented standards always take precedence.
 - **`auditing-langgraph`** (RelayAI) — audits how your application uses LangGraph and
   LangChain against the `langgraph-expert` rules. Run `/auditing-langgraph` (optionally
   with a folder) or ask the agent to audit the LangGraph architecture. It only reads the

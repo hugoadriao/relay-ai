@@ -86,7 +86,8 @@ None of these is a fix; each one only hides the bug:
 - a `sleep` or a retry to get past a race condition or a deterministic failure;
 - pinning a dependency version without knowing what broke.
 
-If a value arrived wrong, go upstream to the code that produced it and fix it there.
+If a value arrived wrong, go upstream to the code that produced it and fix it there. Write
+the fix and its regression test following the `writing-python` skill.
 
 ## Tools
 

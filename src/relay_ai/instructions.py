@@ -20,6 +20,12 @@ these specialties.
 
 When implementing a ticket (for example with `/implement` or `/implement-spec`) whose body has
 a `**Specialist:**` line, delegate its implementation to that agent as a subagent.
+
+## Python code style (RelayAI)
+
+Python code in this project is written and reviewed following the `writing-python` skill
+(`.agents/skills/writing-python/SKILL.md`), unless the project's own configuration or coding
+standard says otherwise.
 {end}
 """
 
