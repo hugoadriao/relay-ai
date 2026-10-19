@@ -17,3 +17,13 @@ def run(command: list[str], cwd: Path | None = None) -> None:
         subprocess.run(command, check=True, cwd=cwd)
     except (OSError, subprocess.CalledProcessError) as err:
         raise SetupError(f"'{' '.join(command)}' failed") from err
+
+
+def succeeds(command: list[str], timeout: int) -> bool:
+    try:
+        result = subprocess.run(
+            command, capture_output=True, check=False, stdin=subprocess.DEVNULL, timeout=timeout
+        )
+    except (OSError, subprocess.TimeoutExpired):
+        return False
+    return result.returncode == 0

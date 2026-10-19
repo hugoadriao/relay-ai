@@ -10,8 +10,8 @@ KEY_SEPARATOR = '#'
 OPENCODE_SCHEMA = 'https://opencode.ai/config.json'
 
 
-def add_mcp_servers(project: Path, platform: Platform) -> list[str]:
-    servers = {name: _render(platform, server) for name, server in _managed_servers().items()}
+def add_mcp_servers(project: Path, platform: Platform, owned: list[str]) -> list[str]:
+    servers = {name: _render(platform, server) for name, server in managed_servers().items()}
     if not servers:
         return []
 
@@ -25,11 +25,20 @@ def add_mcp_servers(project: Path, platform: Platform) -> list[str]:
         config[SCHEMA_KEY] = OPENCODE_SCHEMA
     project_servers = config.setdefault(platform.mcp_key, {})
     missing = {name: server for name, server in servers.items() if name not in project_servers}
-    if not missing:
+    outdated = {
+        name: server
+        for name, server in servers.items()
+        if server_key(platform, name) in owned and project_servers.get(name) not in (None, server)
+    }
+    if not missing and not outdated:
         return []
 
-    console.info(f'Adding MCP servers to {platform.mcp_config.as_posix()}: {", ".join(missing)}')
-    project_servers.update(missing)
+    config_name = platform.mcp_config.as_posix()
+    if missing:
+        console.info(f'Adding MCP servers to {config_name}: {", ".join(missing)}')
+    if outdated:
+        console.info(f'Updating MCP servers in {config_name}: {", ".join(outdated)}')
+    project_servers.update(missing | outdated)
     save_json(config_file, config)
     return [server_key(platform, name) for name in missing]
 
@@ -39,7 +48,14 @@ def legacy_server_key(key: str) -> str:
 
 
 def managed_server_keys(platforms: list[Platform]) -> set[str]:
-    return {server_key(platform, name) for platform in platforms for name in _managed_servers()}
+    return {server_key(platform, name) for platform in platforms for name in managed_servers()}
+
+
+def managed_servers() -> dict[str, dict]:
+    source = asset('mcp.json')
+    if not source.is_file():
+        return {}
+    return json.loads(source.read_text(encoding='utf-8'))['servers']
 
 
 def remove_mcp_servers(project: Path, keys: list[str]) -> None:
@@ -61,11 +77,8 @@ def server_key(platform: Platform, name: str) -> str:
     return f'{platform.mcp_config.as_posix()}{KEY_SEPARATOR}{name}'
 
 
-def _managed_servers() -> dict[str, dict]:
-    source = asset('mcp.json')
-    if not source.is_file():
-        return {}
-    return json.loads(source.read_text(encoding='utf-8'))['servers']
+def server_names(keys: list[str]) -> set[str]:
+    return {key.rpartition(KEY_SEPARATOR)[2] for key in keys}
 
 
 def _render(platform: Platform, server: dict) -> dict:

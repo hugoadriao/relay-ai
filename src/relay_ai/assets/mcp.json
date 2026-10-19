@@ -4,7 +4,8 @@
       "url": "https://docs.langchain.com/mcp"
     },
     "mcp-debugger": {
-      "command": ["npx", "-y", "@debugmcp/mcp-debugger@0.25.1", "stdio"]
+      "command": ["npx", "-y", "--prefer-offline", "@debugmcp/mcp-debugger@0.25.1", "stdio"],
+      "prefetch": ["npx", "-y", "@debugmcp/mcp-debugger@0.25.1", "--version"]
     },
     "reference-langchain": {
       "url": "https://reference.langchain.com/mcp"

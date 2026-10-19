@@ -9,8 +9,9 @@ projects and open standards, and adds what's missing between them. See [Credits]
 
 ## Prerequisites
 
-RelayAI needs two tools on your machine. `relay-ai init` checks both before installing
-anything and stops with instructions if one is missing.
+RelayAI needs uv, and Node.js for its debugger. `relay-ai init` stops with instructions if
+uv is missing. Without Node.js, it still installs everything, configures the debugger and
+tells you how to install Node.js; the debugger only starts once Node.js is there.
 
 ### uv
 
@@ -95,7 +96,12 @@ Then:
      ticket-writing and implementation skills route specialist work to them, and points
      every agent to the `writing-python` style;
    - adds the MCP servers the agents use to the platform's config (`.vscode/mcp.json` or
-     `opencode.json`), keeping the entries you already had.
+     `opencode.json`), keeping the entries you already had. On `update`, the entries RelayAI
+     added are refreshed; yours are never touched.
+   - downloads the debugger (mcp-debugger) into npm's cache, after checking that the npm
+     registry answers. It is configured with `npx --prefer-offline`, so once cached it
+     starts without contacting the registry. If Node.js is missing or the registry can't be
+     reached, `init` says how to fix it and carries on.
 4. Sets Graphify up for the platforms you chose, exactly as it's designed to work:
    - adds RelayAI's agent and skill folders and `docs/audits/` to `.graphifyignore`, so
      the graph describes your code, not the installed agents and skills or old audit
@@ -200,6 +206,21 @@ and open a new terminal, or move the project to a shorter path (e.g. `C:\dev\<pr
 they need (`npx`, remote URLs). RelayAI's agents still work without them: the
 `langgraph-expert` falls back to reading the official docs directly, and `debugging-python`
 falls back to temporary, targeted prints.
+
+If your network blocks the npm registry, the debugger can't be downloaded, and the editor
+reports a timeout when it tries to start it. It only needs to reach npm's cache once, by any
+of these:
+
+- point npm to your company's registry mirror (`npm config set registry <url>`), then run
+  `relay-ai update`;
+- ask IT to allow `registry.npmjs.org`;
+- from a network that reaches the registry, run once:
+
+  ```bash
+  npx -y @debugmcp/mcp-debugger@0.25.1 --version
+  ```
+
+From then on it starts from the cache, without the registry.
 
 ## What's in it
 
