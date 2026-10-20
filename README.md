@@ -96,8 +96,9 @@ Then:
      Copilot, `.opencode/agents/*.md` for OpenCode);
    - lists the specialist agents in a `relay-ai` section of the platform's instructions
      file (`.github/copilot-instructions.md` for Copilot, `AGENTS.md` for OpenCode), so
-     ticket-writing and implementation skills route specialist work to them, and points
-     every agent to the `writing-python` style;
+     ticket-writing and implementation skills route specialist work to them, points
+     every agent to the `writing-python` style, and turns on Graphify's work memory (see
+     [Exploration memory](#exploration-memory));
    - adds the MCP servers the agents use to the platform's config (`.vscode/mcp.json` or
      `opencode.json`), keeping the entries you already had. On `update`, the entries RelayAI
      added are refreshed; yours are never touched.
@@ -122,7 +123,11 @@ Then:
    (including `AGENTS.md`), are listed in `.git/info/exclude`, which is local to your clone,
    so not even that list shows up in git. Graphify's own files (`graphify-out/`,
    `.gitattributes`, `.opencode/plugins/graphify.js`) stay visible, because Graphify is
-   designed for the graph to be committed and shared. If `init` had to change a file your
+   designed for the graph to be committed and shared. The exceptions are the two files
+   Graphify derives from the work memory, `graphify-out/reflections/LESSONS.md` and
+   `graphify-out/.graphify_learning.json`: they change on every commit and would conflict
+   between branches, and agents rebuild them from the memories at the start of each session
+   (see [Exploration memory](#exploration-memory)). If `init` had to change a file your
    repository already tracks, it tells you, so you can review that diff.
 6. Records everything it installed or added in `.github/relay-ai.json`, so `update` and
    `uninstall` touch only what is RelayAI's.
@@ -134,6 +139,25 @@ dropped.
 
 To refresh the knowledge graph by hand, use Graphify's own commands: `graphify update .`
 for code, `/graphify --update` in the chat for docs and images.
+
+### Exploration memory
+
+Once the graph exists, the instructions RelayAI writes tell every agent (including
+subagents) to use Graphify's work memory, so a task doesn't explore from scratch what an
+earlier one already found:
+
+- before exploring the code, the agent runs `graphify reflect --if-stale` and reads
+  `graphify-out/reflections/LESSONS.md`: it starts from the sources that already proved
+  useful, skips the dead ends and applies past corrections, checking them in the code first;
+- after each graph query it has checked in the code, it records the result with
+  `graphify save-result` in `graphify-out/memory/`, in English: `useful`, `corrected` (with
+  where the answer really is) or `dead_end` (the answer doesn't exist in the code);
+- at the end of the task, it tells you in one line how many memories it recorded.
+
+The memories show up in git, so you can review them and share them with your team by
+committing them; each has a unique file name, so memories recorded on different branches
+never conflict. The lessons Graphify derives from them stay out of git. A node only becomes a preferred source after two useful answers, and older
+signals weigh less over time (Graphify's own rules).
 
 ## Updating
 
@@ -275,7 +299,9 @@ From then on it starts from the cache, without the registry.
   with the `fastapi-expert`. Run `/auditing-code` (optionally with `langgraph` or `fastapi`
   and a folder) or ask an agent to audit the application. Without a framework, it audits
   every one your project depends on. It only reads the code, starting from the Graphify
-  graph, and writes one English report per framework to `docs/audits/<framework>-<date>.md`:
+  graph (recording what it located in Graphify's work memory, see
+  [Exploration memory](#exploration-memory)), and writes one English report per framework to
+  `docs/audits/<framework>-<date>.md`:
   an inventory, then one finding per wrong pattern, with its occurrences, the target
   pattern, its cost and what it depends on, compared with the previous audit. Each
   finding is ready to plan with `/to-spec` and `/to-tickets`.

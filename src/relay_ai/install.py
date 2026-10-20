@@ -17,6 +17,7 @@ from relay_ai.git import (
     modified_tracked_files,
 )
 from relay_ai.graphify import (
+    GRAPHIFY_DERIVED_FILES,
     GRAPHIFY_IGNORE_FILE,
     configure_project,
     ensure_graphify,
@@ -140,7 +141,10 @@ def install(project: Path, platforms: list[Platform] | None, update: bool) -> Ch
 
     if is_git_repository(project):
         exclude_from_git(
-            project, [Path(path) for path in agents + skills] + created + [MANIFEST_FILE]
+            project,
+            [Path(path) for path in agents + skills]
+            + created
+            + [MANIFEST_FILE, *GRAPHIFY_DERIVED_FILES],
         )
         for changed in modified_tracked_files(project, preexisting):
             console.warn(

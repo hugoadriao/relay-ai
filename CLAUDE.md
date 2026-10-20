@@ -23,6 +23,8 @@ As seções "Planejado" e "Em aberto" do `SCOPE.md` são o trabalho pendente mai
   confirmar nome e invocação (#28).
 - Validar o `fastapi-expert` (#42, #43) e a `auditing-code` (#44) num projeto real
   (checklists em "Planejado").
+- Validar a memória de exploração (#49) num projeto real e medir o ganho (checklist em
+  "Planejado").
 - Conteúdo próprio novo (outro especialista ou skill): grillar nome, escopo e sobreposição
   com o mattpocock/skills antes de escrever; nada deve ser inventado além do que está
   decidido sem perguntar.
