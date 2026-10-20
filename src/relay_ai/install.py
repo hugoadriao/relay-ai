@@ -30,9 +30,10 @@ from relay_ai.mcp import (
     legacy_server_key,
     managed_server_keys,
     remove_mcp_servers,
+    server_names,
 )
 from relay_ai.platforms import COPILOT, PLATFORMS, Platform
-from relay_ai.prerequisites import check_node
+from relay_ai.prerequisites import prefetch_mcp_servers
 from relay_ai.windows import check_path_length
 
 AGENTS_FILE = Path('AGENTS.md')
@@ -63,7 +64,6 @@ def install(project: Path, platforms: list[Platform] | None, update: bool) -> Ch
     if not project.is_dir():
         raise SetupError(f'project folder not found: {project}')
     check_path_length(project)
-    check_node()
 
     previous = installed_manifest(project)
     if update and previous is None:
@@ -92,7 +92,7 @@ def install(project: Path, platforms: list[Platform] | None, update: bool) -> Ch
         platform_agents = install_relay_agents(project, platform, owned)
         write_specialists_section(project, platform, platform_agents)
         agents += [agent.path.as_posix() for agent in platform_agents]
-        mcp_servers += add_mcp_servers(project, platform)
+        mcp_servers += add_mcp_servers(project, platform, previous.mcp_servers)
     for platform in PLATFORMS:
         if platform not in platforms:
             remove_specialists_section(project, platform)
@@ -134,6 +134,7 @@ def install(project: Path, platforms: list[Platform] | None, update: bool) -> Ch
         skills=skills,
     )
     save_manifest(project, manifest)
+    prefetch_mcp_servers(server_names(manifest.mcp_servers))
 
     if is_git_repository(project):
         exclude_from_git(
