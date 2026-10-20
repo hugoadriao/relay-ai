@@ -9,7 +9,7 @@ from relay_ai.process import capture
 EXCLUDE_END = '# relay-ai:end'
 EXCLUDE_START = '# relay-ai:start'
 EXCLUDE_TEMPLATE = """{start}
-# Installed by RelayAI (local to this clone; `relay-ai update` rewrites this block)
+# Hidden by RelayAI (local to this clone; `relay-ai update` rewrites this block)
 {patterns}
 {end}
 """
@@ -20,7 +20,7 @@ def exclude_from_git(project: Path, paths: list[Path]) -> None:
     prefix = _prefix(project)
     patterns = '\n'.join(_pattern(project, prefix, path) for path in paths)
 
-    console.info(f'Hiding {len(paths)} RelayAI paths from git (.git/info/exclude)...')
+    console.info(f'Hiding {len(paths)} paths from git (.git/info/exclude)...')
     block = EXCLUDE_TEMPLATE.format(end=EXCLUDE_END, patterns=patterns, start=EXCLUDE_START)
     upsert_block(exclude_file, EXCLUDE_START, EXCLUDE_END, block)
 

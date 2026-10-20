@@ -123,7 +123,11 @@ Then:
    (including `AGENTS.md`), are listed in `.git/info/exclude`, which is local to your clone,
    so not even that list shows up in git. Graphify's own files (`graphify-out/`,
    `.gitattributes`, `.opencode/plugins/graphify.js`) stay visible, because Graphify is
-   designed for the graph to be committed and shared. If `init` had to change a file your
+   designed for the graph to be committed and shared. The exceptions are the two files
+   Graphify derives from the work memory, `graphify-out/reflections/LESSONS.md` and
+   `graphify-out/.graphify_learning.json`: they change on every commit and would conflict
+   between branches, and agents rebuild them from the memories at the start of each session
+   (see [Exploration memory](#exploration-memory)). If `init` had to change a file your
    repository already tracks, it tells you, so you can review that diff.
 6. Records everything it installed or added in `.github/relay-ai.json`, so `update` and
    `uninstall` touch only what is RelayAI's.
@@ -151,7 +155,8 @@ earlier one already found:
 - at the end of the task, it tells you in one line how many memories it recorded.
 
 The memories show up in git, so you can review them and share them with your team by
-committing them. A node only becomes a preferred source after two useful answers, and older
+committing them; each has a unique file name, so memories recorded on different branches
+never conflict. The lessons Graphify derives from them stay out of git. A node only becomes a preferred source after two useful answers, and older
 signals weigh less over time (Graphify's own rules).
 
 ## Updating

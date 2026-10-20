@@ -8,7 +8,12 @@ from relay_ai.platforms import Platform
 from relay_ai.process import capture, run
 from relay_ai.textfile import line_ending, read_text, write_text
 
-GRAPHIFY_GRAPH_FILE = Path('graphify-out') / 'graph.json'
+GRAPHIFY_OUT_DIR = Path('graphify-out')
+GRAPHIFY_DERIVED_FILES = (
+    GRAPHIFY_OUT_DIR / '.graphify_learning.json',
+    GRAPHIFY_OUT_DIR / 'reflections' / 'LESSONS.md',
+)
+GRAPHIFY_GRAPH_FILE = GRAPHIFY_OUT_DIR / 'graph.json'
 GRAPHIFY_IGNORE_FILE = '.graphifyignore'
 GRAPHIFY_PACKAGE = 'graphifyy'
 UV_INSTALL_URL = 'https://docs.astral.sh/uv/getting-started/installation/'
