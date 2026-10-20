@@ -1,3 +1,7 @@
+<p align="center">
+  <img alt="RelayAI: scope first, then hand off to specialists" src=".github/assets/relayai-banner-light.png" width="70%">
+</p>
+
 # RelayAI
 
 Agents and skills for **GitHub Copilot (VS Code)** and **OpenCode** that scope your work and
