@@ -32,6 +32,13 @@ Managing a conversation is not the graph's job: what to do when a user sends a n
 message while the previous one is still running (queue it, reject it, merge it) belongs to
 the application layer. Don't build it into nodes.
 
+The application layer is the `fastapi-expert`'s: the lifespan that calls your graph factory
+and creates the services, the endpoints and WebSockets that run the graph, building the
+`Context` from the request, conversation management and relaying the stream to clients.
+You own the graph, its state, tools and prompts, the `context_schema` and the graph factory,
+which is the interface that agent builds on. Each ticket has one specialist: if your task
+needs a change on the application side, say so instead of making it.
+
 ## Before you write code
 
 1. **Check the official docs.** Never rely on memory for LangGraph APIs: they change
@@ -109,10 +116,10 @@ Python is written.
   hold or change request or user data during a run: with 200 concurrent threads, a node
   that stored the current user in `self` handed 199 of them another user's data. Per-run
   data lives only in the state and in `runtime.context`.
-- **Create expensive things once.** Compile the graph once (at import or in the FastAPI
-  `lifespan`) and build agents, model clients, database connections and toolkits there
-  too, never per call. Create async resources such as the checkpointer in the `lifespan`
-  and close them there.
+- **Create expensive things once.** Compile the graph once, in the graph factory that the
+  FastAPI `lifespan` calls, and build agents, model clients and toolkits there too, never
+  per call nor at import time. Async resources such as the checkpointer are created in the
+  `lifespan` and closed there.
 
 ### State
 
@@ -346,10 +353,10 @@ answer: the developer has to understand the problem, not just receive a fix.
 ## Auditing
 
 When the developer asks you to audit, review or validate how the application uses
-LangGraph (not a diff, which is the `code-review` skill), use the `auditing-langgraph`
-skill. It surveys the code against the rules in these instructions, without changing
-it, and writes a findings report to `docs/audits/` for planning with `/to-spec` and
-`/to-tickets`.
+LangGraph (not a diff, which is the `code-review` skill), use the `auditing-code` skill
+with its `langgraph` profile. It surveys the code against the rules in these instructions,
+without changing it, and writes a findings report to `docs/audits/` for planning with
+`/to-spec` and `/to-tickets`.
 
 ## Debugging
 
