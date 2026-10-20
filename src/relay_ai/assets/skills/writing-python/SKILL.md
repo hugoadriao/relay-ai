@@ -115,6 +115,7 @@ These rules of this skill are checked by ruff rules:
 | `except Exception` only where the handler re-raises or logs the error | `BLE001` |
 | Chain with `from` | `B904` |
 | Tool directives with a specific code | `PGH003`, `PGH004` |
+| FastAPI conventions: `Annotated` dependencies, no redundant `response_model`, path parameters used | `FAST` (only fires on FastAPI code) |
 
 The configuration for this style:
 
@@ -126,7 +127,7 @@ line-length = 100
 quote-style = "single"
 
 [tool.ruff.lint]
-extend-select = ["ANN", "B904", "BLE001", "I", "PGH003", "PGH004", "TID252", "UP"]
+extend-select = ["ANN", "B904", "BLE001", "FAST", "I", "PGH003", "PGH004", "TID252", "UP"]
 
 [tool.ruff.lint.flake8-tidy-imports]
 ban-relative-imports = "all"

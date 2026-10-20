@@ -237,6 +237,16 @@ From then on it starts from the cache, without the registry.
   builds async, stateless nodes and tools that are safe with many concurrent users, and
   calls out anti-patterns plainly — symptomatic fixes, dead or redundant code,
   over-engineering, LangGraph misuse — with a simpler way to build the feature.
+- **`fastapi-expert`** (RelayAI) — a FastAPI specialist agent for the application layer
+  around your graphs: the lifespan as the composition root, settings, dependencies, error
+  handling, middleware, WebSockets and SSE, conversation management and tests. It reads
+  the official FastAPI skill shipped inside the FastAPI installed in your project (since
+  0.134.0), so its API guidance always matches your version, and adds secure, typed
+  WebSocket patterns (handshake checks before `accept`, structured concurrency for
+  cancellation and disconnects). It works with the `langgraph-expert` through a clear
+  contract: the graph and its factory are that agent's, everything around them is this
+  one's. To make the official FastAPI skill available to every agent too, run
+  `uvx library-skills` in your project (`--copy` on Windows without Developer Mode).
 - **`debugging-python`** (RelayAI) — a Python debugging skill the agent loads on its own
   when debugging, alongside `diagnosing-bugs`. It makes the agent observe the real values
   at the point of failure with a real debugger
@@ -250,16 +260,15 @@ From then on it starts from the cache, without the registry.
   fail-fast exceptions caught only at the edge. It lists the ruff rules that check it and
   proposes them when your project has no ruff configuration. Your project's own ruff
   settings, Python version and documented standards always take precedence.
-- **`auditing-langgraph`** (RelayAI) — audits how your application uses LangGraph and
-  LangChain against the `langgraph-expert` rules. Run `/auditing-langgraph` (optionally
-  with a folder) or ask the agent to audit the LangGraph architecture. It only reads the
-  code, starting from the Graphify graph, and writes an English report to
-  `docs/audits/langgraph-<date>.md`: an inventory of graphs, agents, tools and prompts,
-  then one finding per wrong pattern, with its occurrences, the target pattern, its
-  cost and what it depends on, compared with the previous audit. Each finding is ready
-  to plan with `/to-spec` and `/to-tickets`.
-
-Coming next from RelayAI itself: a FastAPI specialist agent.
+- **`auditing-code`** (RelayAI) — audits how your whole application uses each framework
+  against its specialist's rules: LangGraph/LangChain with the `langgraph-expert`, FastAPI
+  with the `fastapi-expert`. Run `/auditing-code` (optionally with `langgraph` or `fastapi`
+  and a folder) or ask an agent to audit the application. Without a framework, it audits
+  every one your project depends on. It only reads the code, starting from the Graphify
+  graph, and writes one English report per framework to `docs/audits/<framework>-<date>.md`:
+  an inventory, then one finding per wrong pattern, with its occurrences, the target
+  pattern, its cost and what it depends on, compared with the previous audit. Each
+  finding is ready to plan with `/to-spec` and `/to-tickets`.
 
 See `SCOPE.md` for the full decision log behind this project.
 
@@ -276,6 +285,8 @@ goes to their authors, and bugs or ideas about them belong upstream.
 | [mcp-debugger](https://github.com/debugmcp/mcp-debugger) | [debugmcp](https://github.com/debugmcp) | The local debugger (breakpoints, stepping, variable inspection) behind the `debugging-python` skill. | MIT |
 | [debugpy](https://github.com/microsoft/debugpy) | [Microsoft](https://github.com/microsoft) | The Python debug adapter mcp-debugger drives, run on the fly with `uv`. | MIT |
 | [LangChain docs MCP servers](https://docs.langchain.com/use-these-docs) | [LangChain](https://github.com/langchain-ai) | Live LangGraph/LangChain documentation and API reference for the `langgraph-expert` agent. | hosted service |
+| [FastAPI agent skill](https://github.com/fastapi/fastapi) | [Sebastián Ramírez](https://github.com/tiangolo) | The official FastAPI skill, read by the `fastapi-expert` from the FastAPI installed in your project. | MIT |
+| [library-skills](https://github.com/tiangolo/library-skills) | [Sebastián Ramírez](https://github.com/tiangolo) | Optional: installs library skills, such as FastAPI's, into `.agents/skills/` for every agent. | MIT |
 | [uv](https://github.com/astral-sh/uv) | [Astral](https://github.com/astral-sh) | Runs the RelayAI installer and installs Graphify. | MIT / Apache-2.0 |
 | [Agent Skills](https://agentskills.io) | Anthropic and contributors | The open skill format (`SKILL.md`) RelayAI's skills follow. | open standard |
 | [AGENTS.md](https://agents.md) | Agentic AI Foundation (Linux Foundation) | The open instructions file shared by Copilot and OpenCode. | open standard |

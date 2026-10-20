@@ -5,11 +5,11 @@ of the fields: a stable structure lets one audit be compared with the next. Text
 brackets is filled in; the comments say what goes in each part and are not copied.
 
 ````markdown
-# LangGraph audit: <project name>
+# <Framework> audit: <project name>
 
 - Date: <YYYY-MM-DD>
-- Scope: <whole application | folder or graph audited>
-- Versions: langgraph <x.y.z>, langchain <x.y.z>, langchain-core <x.y.z>
+- Scope: <whole application | folder audited>
+- Versions: <each of the profile's packages and its version>
 - Previous audit: <path to the previous report | none>
 
 ## Summary
@@ -37,25 +37,23 @@ Suggested sequence:
 
 ## Inventory
 
-<!-- The map of the LangGraph code: what exists and where, before any judgement. -->
+<!-- The map of the code: what exists and where, before any judgement. -->
 
 | Component | Kind | Location | Findings |
 |---|---|---|---|
-| <name> | graph / node / agent / tool / state / prompt / service / checkpointer | `<path>:<line>` | `<slug>`, ... |
+| <name> | <one of the kinds in the profile's inventory> | `<path>:<line>` | `<slug>`, ... |
 
 ## Findings
 
-<!-- One subsection per area of "How you build", always in this order: Shape of the code,
-     Dependencies, Execution, State, Agents and tools, Prompts, Artifacts and large data,
-     Flow and streaming, Tests. An area without findings says "No findings" and points to
-     Conforming. -->
+<!-- One subsection per area of the specialist's "How you build", always in its order.
+     An area without findings says "No findings" and points to Conforming. -->
 
 ### <Area>
 
 #### `<slug>`: <title naming the wrong pattern>
 
 - **Kind:** correctness | structural
-- **Rule:** <the langgraph-expert rule or anti-pattern it breaks>
+- **Rule:** <the specialist's rule or anti-pattern it breaks>
 - **Consequence:** <the concrete effect: what breaks, for whom, when; cite the measured
   data in the agent's rules where it applies>
 - **Occurrences:**
@@ -79,7 +77,7 @@ Suggested sequence:
 ## Not covered
 
 <!-- What was not checked and why: outside the scope, code missing from the graph, dynamic
-     imports, generated code. -->
+     imports, generated code, findings that belong to another profile's report. -->
 
 - <item>: <reason>
 ````
