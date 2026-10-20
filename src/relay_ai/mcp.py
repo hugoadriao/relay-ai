@@ -2,7 +2,8 @@ import json
 from pathlib import Path
 
 from relay_ai import console
-from relay_ai.content import asset
+from relay_ai.content import asset, install_archive_skill
+from relay_ai.errors import SetupError
 from relay_ai.jsonfile import SCHEMA_KEY, load_json, save_json, warn_not_plain_json
 from relay_ai.platforms import COPILOT, OPENCODE, PLATFORMS, Platform
 
@@ -43,6 +44,32 @@ def add_mcp_servers(project: Path, platform: Platform, owned: list[str]) -> list
     return [server_key(platform, name) for name in missing]
 
 
+def install_server_skills(target: Path, owned: set[str]) -> list[str]:
+    installed = []
+    for server in managed_servers().values():
+        skill = server.get('skill')
+        if skill is None:
+            continue
+        console.info(f'Downloading the {skill["name"]} skill ({skill["archive"]})...')
+        try:
+            if install_archive_skill(
+                archive_url=skill['archive'],
+                name=skill['name'],
+                owned=owned,
+                skill_path=skill['path'],
+                target=target,
+            ):
+                installed.append(skill['name'])
+        except SetupError as err:
+            console.warn(
+                f'{err}: the {skill["name"]} skill was not installed or updated. The debugger '
+                'still works without it; run `relay-ai update` once GitHub is reachable.'
+            )
+            if skill['name'] in owned and (target / skill['name']).is_dir():
+                installed.append(skill['name'])
+    return installed
+
+
 def legacy_server_key(key: str) -> str:
     return key if KEY_SEPARATOR in key else server_key(COPILOT, key)
 
@@ -55,7 +82,10 @@ def managed_servers() -> dict[str, dict]:
     source = asset('mcp.json')
     if not source.is_file():
         return {}
-    return json.loads(source.read_text(encoding='utf-8'))['servers']
+    servers = json.loads(source.read_text(encoding='utf-8'))['servers']
+    return {
+        name: _with_version(server, server.get('version', '')) for name, server in servers.items()
+    }
 
 
 def remove_mcp_servers(project: Path, keys: list[str]) -> None:
@@ -94,3 +124,13 @@ def _render(platform: Platform, server: dict) -> dict:
 def _split(key: str, platform: Platform) -> str | None:
     config, _, name = key.rpartition(KEY_SEPARATOR)
     return name if config == platform.mcp_config.as_posix() else None
+
+
+def _with_version(value: object, version: str) -> object:
+    if isinstance(value, str):
+        return value.replace('{version}', version)
+    if isinstance(value, list):
+        return [_with_version(item, version) for item in value]
+    if isinstance(value, dict):
+        return {key: _with_version(item, version) for key, item in value.items()}
+    return value

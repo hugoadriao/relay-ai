@@ -4,8 +4,14 @@
       "url": "https://docs.langchain.com/mcp"
     },
     "mcp-debugger": {
-      "command": ["npx", "-y", "--prefer-offline", "@debugmcp/mcp-debugger@0.25.1", "stdio"],
-      "prefetch": ["npx", "-y", "@debugmcp/mcp-debugger@0.25.1", "--version"]
+      "command": ["npx", "-y", "--prefer-offline", "@debugmcp/mcp-debugger@{version}", "stdio"],
+      "prefetch": ["npx", "-y", "@debugmcp/mcp-debugger@{version}", "--version"],
+      "skill": {
+        "archive": "https://codeload.github.com/debugmcp/mcp-debugger/zip/refs/tags/v{version}",
+        "name": "mcp-debugger",
+        "path": "skills/debugging"
+      },
+      "version": "0.25.1"
     },
     "reference-langchain": {
       "url": "https://reference.langchain.com/mcp"

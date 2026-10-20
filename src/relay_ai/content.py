@@ -4,6 +4,8 @@ import tempfile
 import urllib.error
 import urllib.request
 import zipfile
+from collections.abc import Iterator
+from contextlib import contextmanager
 from dataclasses import dataclass
 from importlib.resources import as_file, files
 from importlib.resources.abc import Traversable
@@ -34,14 +36,27 @@ def asset(name: str) -> Traversable:
     return files('relay_ai') / 'assets' / name
 
 
+def install_archive_skill(
+    archive_url: str, name: str, owned: set[str], skill_path: str, target: Path
+) -> bool:
+    destination = target / name
+    if not _can_replace(destination, owned):
+        return False
+
+    with _downloaded_repository(archive_url) as repository:
+        skill = repository / skill_path
+        if not (skill / SKILL_FILE).is_file():
+            raise SetupError(f'{skill_path}/{SKILL_FILE} not found in {archive_url}')
+        _replace_dir(skill, destination)
+        shutil.copy2(repository / 'LICENSE', destination / 'LICENSE')
+    return True
+
+
 def install_mattpocock_skills(target: Path, owned: set[str]) -> list[str]:
     console.info(f'Downloading mattpocock/skills ({MATTPOCOCK_REF})...')
-    archive = _download(MATTPOCOCK_ZIP_URL)
 
     installed = []
-    with tempfile.TemporaryDirectory() as workdir:
-        zipfile.ZipFile(io.BytesIO(archive)).extractall(workdir)
-        repository = next(Path(workdir).iterdir())
+    with _downloaded_repository(MATTPOCOCK_ZIP_URL) as repository:
         license_file = repository / 'LICENSE'
         for category in MATTPOCOCK_CATEGORIES:
             for skill in _skill_dirs(repository / 'skills' / category):
@@ -115,6 +130,14 @@ def _download(url: str) -> bytes:
             return response.read()
     except urllib.error.URLError as err:
         raise SetupError(f'could not download {url}') from err
+
+
+@contextmanager
+def _downloaded_repository(url: str) -> Iterator[Path]:
+    archive = _download(url)
+    with tempfile.TemporaryDirectory() as workdir:
+        zipfile.ZipFile(io.BytesIO(archive)).extractall(workdir)
+        yield next(Path(workdir).iterdir())
 
 
 def _read_agent(agent_file: Path, platform: Platform) -> Agent:

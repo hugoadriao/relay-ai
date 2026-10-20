@@ -32,19 +32,28 @@ do with the bug.
 
 ## The debugger: mcp-debugger
 
-When the `mcp-debugger` tools are available, use the debugger to observe values. It runs
-locally (no IDE needed) and drives `debugpy`. Read [debugger.md](debugger.md) for how to
-start a session and use the tools sparingly. In short:
+When the `mcp-debugger` tools are available, use the debugger to observe values. It drives
+`debugpy` and needs no IDE. Its tools (sessions, launch and attach, breakpoints by
+`statement`, `function` or line, path mappings, output, restarts) are explained by the
+official `mcp-debugger` skill, which RelayAI installs next to this one: read it before your
+first session. This skill adds how to use it in this project:
 
-1. Start from the red-capable command of `diagnosing-bugs` Phase 1, ideally one pytest test.
-2. Run that command under a temporary `debugpy` that waits for the debugger, in the
-   background, without adding `debugpy` to the project's dependencies.
-3. Attach to it, then put a breakpoint where your hypotheses diverge, with a condition
-   whenever the line runs more than once.
-4. When it stops: look at variable names and types first, then evaluate projections, and
-   fetch full values only when they are small.
-5. Step only through the suspicious region; otherwise continue to the next breakpoint.
-6. At the end, remove your breakpoints and close the session.
+1. **Decide whether you need it.** The debugger is for state you can only see at run time:
+   what a database, an LLM or another service actually returned, a value inside a running
+   app. To check how a pure function behaves, write a test instead: it runs in
+   milliseconds and stays as the regression test.
+2. **Ask the developer: launch or attach.** Every time, before preparing anything. Launch:
+   the debugger starts the target on this machine, with the project's interpreter. Attach:
+   the target runs elsewhere, usually in a container, with `debugpy` listening, and the
+   debugger connects to it.
+3. **Prepare from the catalog.** Follow the recipe for that mode in `docs/agents/debugging.md`
+   or, if it has none yet, discover the environment and build it: see
+   [launch-and-attach.md](launch-and-attach.md).
+4. **Spend few tokens** with the tools: see [debugger.md](debugger.md). Breakpoints where
+   your hypotheses diverge, with a condition whenever the line runs more than once; at a
+   stop, names and types first, then projections.
+5. **Clean up and record:** restore what you found, and record the recipe once the mode has
+   worked end to end.
 
 **If the debugger is not available**, say so once (RelayAI configures `mcp-debugger` in the
 project's MCP settings; it needs Node.js 22+). Then fall back to temporary prints of
