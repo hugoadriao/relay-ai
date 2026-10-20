@@ -96,8 +96,9 @@ Then:
      Copilot, `.opencode/agents/*.md` for OpenCode);
    - lists the specialist agents in a `relay-ai` section of the platform's instructions
      file (`.github/copilot-instructions.md` for Copilot, `AGENTS.md` for OpenCode), so
-     ticket-writing and implementation skills route specialist work to them, and points
-     every agent to the `writing-python` style;
+     ticket-writing and implementation skills route specialist work to them, points
+     every agent to the `writing-python` style, and turns on Graphify's work memory (see
+     [Exploration memory](#exploration-memory));
    - adds the MCP servers the agents use to the platform's config (`.vscode/mcp.json` or
      `opencode.json`), keeping the entries you already had. On `update`, the entries RelayAI
      added are refreshed; yours are never touched.
@@ -134,6 +135,24 @@ dropped.
 
 To refresh the knowledge graph by hand, use Graphify's own commands: `graphify update .`
 for code, `/graphify --update` in the chat for docs and images.
+
+### Exploration memory
+
+Once the graph exists, the instructions RelayAI writes tell every agent (including
+subagents) to use Graphify's work memory, so a task doesn't explore from scratch what an
+earlier one already found:
+
+- before exploring the code, the agent runs `graphify reflect --if-stale` and reads
+  `graphify-out/reflections/LESSONS.md`: it starts from the sources that already proved
+  useful, skips the dead ends and applies past corrections, checking them in the code first;
+- after each graph query it has checked in the code, it records the result with
+  `graphify save-result` in `graphify-out/memory/`, in English: `useful`, `corrected` (with
+  where the answer really is) or `dead_end` (the answer doesn't exist in the code);
+- at the end of the task, it tells you in one line how many memories it recorded.
+
+The memories show up in git, so you can review them and share them with your team by
+committing them. A node only becomes a preferred source after two useful answers, and older
+signals weigh less over time (Graphify's own rules).
 
 ## Updating
 

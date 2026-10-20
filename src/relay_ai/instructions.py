@@ -26,6 +26,35 @@ a `**Specialist:**` line, delegate its implementation to that agent as a subagen
 Python code in this project is written and reviewed following the `writing-python` skill
 (`.agents/skills/writing-python/SKILL.md`), unless the project's own configuration or coding
 standard says otherwise.
+
+## Exploration memory (RelayAI)
+
+When `graphify-out/graph.json` exists, use Graphify's work memory, so that each task starts from
+what earlier sessions learned about this code and leaves what it learned for the next ones:
+
+1. Before the first exploration of the code in a task, run `graphify reflect --if-stale` and read
+   `graphify-out/reflections/LESSONS.md`: start from its preferred sources, skip its known dead
+   ends and apply its corrections. The code may have changed since a lesson was recorded: check
+   in the code what a lesson points to before relying on it, and re-check every node that
+   `graphify explain` marks as changed since its lesson.
+2. After each graph query (`graphify query`, `path` or `explain`), once you have checked its
+   answer in the code, record it with `graphify save-result`: `--question`, `--answer` with
+   `file:line` references, `--type` (`query`, `path_query` or `explain`), `--nodes` with the
+   labels of the nodes the answer cites, and one `--outcome`:
+   - `useful`: the cited nodes answered the question;
+   - `corrected`, with `--correction` saying where the answer really is (`file:line` or
+     symbol): the graph pointed to the wrong place and the answer came from a search or a file
+     read;
+   - `dead_end`: the answer doesn't exist in the code (for example, the feature doesn't exist).
+
+   When the answer has quotes or several lines, write it to a temporary file outside the
+   project and pass `--answer-file` instead of `--answer`.
+3. Write the question, the answer and the correction in English, whatever the language of the
+   conversation.
+4. Put these rules in the prompt of every subagent that explores code, and ask it to report
+   back how many memories it recorded, by outcome.
+5. At the end of the task, the agent talking to the developer tells them in one line how many
+   memories were recorded, by outcome, its subagents' included.
 {end}
 """
 
