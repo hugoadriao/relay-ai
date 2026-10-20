@@ -299,7 +299,9 @@ From then on it starts from the cache, without the registry.
   with the `fastapi-expert`. Run `/auditing-code` (optionally with `langgraph` or `fastapi`
   and a folder) or ask an agent to audit the application. Without a framework, it audits
   every one your project depends on. It only reads the code, starting from the Graphify
-  graph, and writes one English report per framework to `docs/audits/<framework>-<date>.md`:
+  graph (recording what it located in Graphify's work memory, see
+  [Exploration memory](#exploration-memory)), and writes one English report per framework to
+  `docs/audits/<framework>-<date>.md`:
   an inventory, then one finding per wrong pattern, with its occurrences, the target
   pattern, its cost and what it depends on, compared with the previous audit. Each
   finding is ready to plan with `/to-spec` and `/to-tickets`.

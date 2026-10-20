@@ -31,13 +31,17 @@ the inventory lists, what code the framework owns and the report's name.
 ## Run as the specialist
 
 Each profile is audited by its specialist agent. If you are not that agent, you don't have
-its rules: delegate steps 1 to 5 to it as a subagent, passing the profile and the scope, and
-then do step 6 yourself from the reports.
+its rules: delegate steps 1 to 5 to it as a subagent, passing the profile, the scope and the
+"Exploration memory (RelayAI)" rules from the project's instructions
+(`.github/copilot-instructions.md` or `AGENTS.md`), and then do step 6 yourself from the
+reports.
 
 ## Boundaries
 
 - **Read only.** Read files, query the Graphify graph and search text. The only files you
-  write are the reports: never edit code, never commit.
+  write are the reports and Graphify's work memory (step 2): the memories in
+  `graphify-out/memory/` and the lessons `graphify reflect` derives from them. Never edit
+  code, never commit.
 - **Never run the project's code or tests.** They can have side effects (databases, external
   APIs, LLM costs). To state a consequence, cite the measured data in the agent's rules
   instead of measuring in the project.
@@ -64,6 +68,10 @@ Start from the Graphify graph and read only the files it points to:
 Complement it with text search for the profile's patterns: the git hooks only update the
 graph on commit, so uncommitted code is missing from it. Without `graphify-out/`, use search
 alone and say so in "Not covered".
+
+Follow the "Exploration memory (RelayAI)" rules in the project's instructions: read the
+lessons before the first query, and record every query once you have checked it in the code,
+so the tasks planned from the report start from what the audit located.
 
 ## 3. Inventory
 
