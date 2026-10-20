@@ -83,9 +83,12 @@ Then:
 
 1. Installs the Graphify CLI if it's missing (`uv tool install graphifyy`) and puts it on
    your PATH (`uv tool update-shell`).
-2. Copies the skills — RelayAI's own and the engineering and productivity skills of
-   [mattpocock/skills](https://github.com/mattpocock/skills), unmodified, each with its
-   original MIT `LICENSE` — into `.agents/skills/`. Skills follow the open
+2. Copies the skills — RelayAI's own, the engineering and productivity skills of
+   [mattpocock/skills](https://github.com/mattpocock/skills) and the official skill of
+   [mcp-debugger](https://github.com/debugmcp/mcp-debugger) (from the release tag that
+   matches the debugger RelayAI configures), unmodified, each with its original MIT
+   `LICENSE` — into `.agents/skills/`. If the mcp-debugger skill can't be downloaded,
+   `init` says so and carries on. Skills follow the open
    [Agent Skills](https://agentskills.io) standard, and `.agents/skills/` is read by both
    VS Code and OpenCode (and other tools), so they're installed once.
 3. For each platform you chose:
@@ -253,7 +256,14 @@ From then on it starts from the cache, without the registry.
   ([mcp-debugger](https://github.com/debugmcp/mcp-debugger), driving a temporary `debugpy`)
   instead of guessing, while keeping token use low: shape before values, projections
   instead of dumping large objects, conditional breakpoints. The debugger runs locally and
-  sends nothing out of your machine.
+  sends nothing out of your machine. Before each session the agent asks you whether to
+  **launch** the code on your machine or **attach** to it where it runs (a container,
+  for example). The first time a mode works, it records the recipe it worked out — from
+  your compose files, Dockerfiles and uv setup — in `docs/agents/debugging.md`, with a
+  separate compose override (`docs/agents/debugging.compose.yaml`, loopback ports only)
+  so your compose files are never edited. Later sessions reuse the recipe and re-check
+  only what changed. Both files are visible in git for you to review and commit; they
+  hold variable names, never secret values.
 - **`writing-python`** (RelayAI) — the default Python code style every agent writes and
   reviews with: code in English, ruff with 100 columns and single quotes, absolute imports,
   mandatory native type hints (PEP 695 generics on 3.12+), no comments explaining code,
@@ -282,7 +292,7 @@ goes to their authors, and bugs or ideas about them belong upstream.
 |---|---|---|---|
 | [mattpocock/skills](https://github.com/mattpocock/skills) | [Matt Pocock](https://github.com/mattpocock) | All the engineering and productivity skills (scoping, grilling, TDD, specs, reviews…). It's also the model RelayAI's own structure and conventions are based on. | MIT |
 | [Graphify](https://github.com/Graphify-Labs/graphify) | [Graphify Labs](https://github.com/Graphify-Labs) | The local knowledge graph behind project discovery, and its automatic updates. | MIT / Apache-2.0 |
-| [mcp-debugger](https://github.com/debugmcp/mcp-debugger) | [debugmcp](https://github.com/debugmcp) | The local debugger (breakpoints, stepping, variable inspection) behind the `debugging-python` skill. | MIT |
+| [mcp-debugger](https://github.com/debugmcp/mcp-debugger) | [debugmcp](https://github.com/debugmcp) | The local debugger (breakpoints, stepping, variable inspection) behind the `debugging-python` skill, and its official agent skill, installed as `mcp-debugger`. | MIT |
 | [debugpy](https://github.com/microsoft/debugpy) | [Microsoft](https://github.com/microsoft) | The Python debug adapter mcp-debugger drives, run on the fly with `uv`. | MIT |
 | [LangChain docs MCP servers](https://docs.langchain.com/use-these-docs) | [LangChain](https://github.com/langchain-ai) | Live LangGraph/LangChain documentation and API reference for the `langgraph-expert` agent. | hosted service |
 | [FastAPI agent skill](https://github.com/fastapi/fastapi) | [Sebastián Ramírez](https://github.com/tiangolo) | The official FastAPI skill, read by the `fastapi-expert` from the FastAPI installed in your project. | MIT |

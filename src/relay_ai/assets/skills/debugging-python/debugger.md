@@ -1,39 +1,13 @@
-# The debugger: mcp-debugger
+# Using the debugger sparingly
 
-`mcp-debugger` is a local MCP server that drives real debuggers through the Debug Adapter
-Protocol; for Python it uses `debugpy`. It runs on this machine, needs no IDE and sends
-nothing out. Check each tool's parameters before calling it, and always pass absolute paths.
-
-## Tools
-
-| Purpose | Tools |
-|---|---|
-| Session | `create_debug_session`, `attach_to_process`, `start_debugging`, `close_debug_session`, `list_debug_sessions` |
-| Moving | `continue_execution`, `step_over`, `step_into`, `step_out`, `pause_execution`, `wait_for_stop` |
-| Breakpoints | `set_breakpoint` (accepts a `condition`, or a `logMessage` for a logpoint), `list_breakpoints`, `remove_breakpoint`, `clear_breakpoints` |
-| Inspection | `get_stack_trace`, `get_scopes`, `get_variables`, `get_local_variables`, `evaluate_expression`, `get_source_context`, `get_output` |
-
-## Starting a session on a test
-
-`debugpy` is not part of the project, so run the target under a temporary one that waits
-for the debugger. In a uv project, run this **in the background** (it blocks until you
-attach):
-
-```bash
-uv run --with debugpy python -m debugpy --listen 127.0.0.1:5678 --wait-for-client -m pytest tests/test_orders.py::test_total -x -q
-```
-
-Then `create_debug_session` for Python and `attach_to_process` to `127.0.0.1:5678`. Set your
-breakpoints right after attaching, before you continue. If the project doesn't use uv, ask
-the developer before installing `debugpy` in its environment.
-
-`"verified": false` right after `set_breakpoint` is normal: `debugpy` binds a breakpoint
-when its module is loaded.
-
-## Using it sparingly
+The official `mcp-debugger` skill explains the tools: the session golden path, launch and
+attach, breakpoints by `statement`, `function` or line, path mappings, output and restarts.
+Read it before your first session; this file only covers how to spend few tokens with them.
+How to start the target in this project is in [launch-and-attach.md](launch-and-attach.md).
 
 1. **Breakpoint placement.** Stop where your hypotheses diverge: the first line where a
-   wrong value could already be visible, not the line that raised.
+   wrong value could already be visible, not the line that raised. Prefer `statement` or
+   `function` breakpoints when the mode allows them, so a moved line doesn't break them.
 2. **Conditions.** If the line runs many times (a loop, a graph node, a request handler), add
    a condition that matches only the failing case, for example
    `not state.get("intent")` or `order.total < 0`.
@@ -46,11 +20,17 @@ when its module is loaded.
      scope); avoid `get_local_variables` when the frame holds large objects;
    - use `evaluate_expression` to project large values: `len(messages)`,
      `type(messages[-1]).__name__`, `messages[-1].content[:200]`, `sorted(state)`,
-     `response.status_code`.
+     `response.status_code`;
+   - call only pure functions from `evaluate_expression`: anything with side effects
+     (writing to a database, HTTP or LLM calls) runs for real in the target.
 5. **Stepping.** `step_over` through the suspicious region, `step_into` only the call you
    suspect, `step_out` as soon as you know the answer, `continue_execution` to jump to the
-   next breakpoint, `wait_for_stop` after starting or continuing.
-6. **Cleanup.** `clear_breakpoints` and `close_debug_session` when done, and stop the
-   background process if it is still running.
+   next breakpoint.
+6. **Waiting for a stop.** There is no tool that waits. `start_debugging` returns `paused`
+   when a breakpoint is hit within its readiness window; after `continue_execution`, check
+   `list_debug_sessions` until the state is `paused`, at growing intervals, and read new
+   output with `get_output` and its `since` cursor instead of re-reading everything.
+7. **Cleanup.** `clear_breakpoints` and `close_debug_session` when done; the rest is in
+   [launch-and-attach.md](launch-and-attach.md).
 
 Secret values are redacted by the debugger; don't turn redaction off.

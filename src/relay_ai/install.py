@@ -27,6 +27,7 @@ from relay_ai.jsonfile import is_empty_config
 from relay_ai.manifest import MANIFEST_FILE, Manifest, load_manifest, save_manifest
 from relay_ai.mcp import (
     add_mcp_servers,
+    install_server_skills,
     legacy_server_key,
     managed_server_keys,
     remove_mcp_servers,
@@ -102,6 +103,7 @@ def install(project: Path, platforms: list[Platform] | None, update: bool) -> Ch
     owned = _owned_names(previous.skills, SKILLS_DIR)
     skill_names = install_relay_skills(skills_dir, owned)
     skill_names += install_mattpocock_skills(skills_dir, owned)
+    skill_names += install_server_skills(skills_dir, owned)
     skills = [(SKILLS_DIR / name).as_posix() for name in skill_names]
 
     for path in [path for path in previous.agents + previous.skills if path not in agents + skills]:
