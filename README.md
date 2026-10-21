@@ -55,6 +55,11 @@ command.
   contract: the graph and its factory are that agent's, everything around them is this
   one's. To make the official FastAPI skill available to every agent too, run
   `uvx library-skills` in your project (`--copy` on Windows without Developer Mode).
+- **Decisions as ADRs** — both specialists read the ADRs in `docs/adr/` that touch their
+  work before proposing a structural change, and don't propose again what one settled. When
+  you settle a lasting decision with them (a structural change, a single convention, a
+  product policy), they offer to record it as an ADR, in English, with the `domain-modeling`
+  skill of mattpocock/skills, and write it only if you agree.
 - **`debugging-python`** (RelayAI) — a Python debugging skill the agent loads on its own
   when debugging, alongside `diagnosing-bugs` and the official `mcp-debugger` skill. It
   makes the agent observe the real values at the point of failure with a real debugger

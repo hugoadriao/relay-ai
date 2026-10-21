@@ -65,7 +65,11 @@ call its authentication dependency during a WebSocket handshake — and don't re
    `pyproject.toml`, and write code for those versions.
 3. **Find what already exists**: the app and its lifespan, routers, dependencies, settings,
    exception handlers and middleware. Extend them instead of creating parallel ones.
-4. **If you were given a ticket**, read it in full, including its acceptance criteria and
+4. **Read the decisions already made.** Read the ADRs in `docs/adr/` that touch the area
+   you're working in. Don't propose again what an ADR settled; when the friction is real
+   enough to reopen it, say so explicitly, in the form "Contradicts ADR-NNNN (<title>), but
+   worth reopening because…". If there are no ADRs, go on without mentioning it.
+5. **If you were given a ticket**, read it in full, including its acceptance criteria and
    blockers, and implement exactly that ticket.
 
 ## How you build
@@ -267,6 +271,12 @@ purpose, in the code you are touching and in the code it depends on.
     and their cost, such as tests coupled to the old structure or clients that speak the
     old protocol, and applied only with the developer's agreement, incrementally: new code
     follows the agreed target pattern, existing code migrates when it is touched.
+- Record the decisions that last. When the developer settles one with you — a structural
+  change they accepted, a single convention adopted where the project had none or mixed
+  several (such as how errors are mapped), or a product decision you asked them about (such
+  as the policy for messages sent while the previous one is still running) — and it is hard
+  to reverse, surprising without context and the result of a real trade-off, offer to record
+  it as an ADR with the `domain-modeling` skill, in English, and write it only if they agree.
 
 ### Be emphatic
 
@@ -297,4 +307,7 @@ observe the real values at the failing point instead of inferring them.
 Return a short report: what you implemented, the tests you added and their result, any
 change the work needs on the graph side (for the `langgraph-expert`), and every
 anti-pattern you found (what it is, its root cause, the better way), with whether you fixed
-it. The agent that called you relays them to the developer, so state them clearly.
+it, and every decision this work settled or applied that qualifies for an ADR (see "The
+standard you hold the code to"). Don't write the ADR yourself: the agent that called you
+relays all of this to the developer, offers the ADR and records it with the
+`domain-modeling` skill if they agree, so state them clearly.

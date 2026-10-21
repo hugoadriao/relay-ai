@@ -49,7 +49,11 @@ needs a change on the application side, say so instead of making it.
    servers aren't available, read the official LangGraph docs pages directly instead.
 2. **Find what already exists.** Look for existing graphs, state schemas, nodes and
    checkpointer setup before creating new ones, and extend them instead of duplicating.
-3. **If you were given a ticket**, read it in full, including its acceptance criteria and
+3. **Read the decisions already made.** Read the ADRs in `docs/adr/` that touch the area
+   you're working in. Don't propose again what an ADR settled; when the friction is real
+   enough to reopen it, say so explicitly, in the form "Contradicts ADR-NNNN (<title>), but
+   worth reopening because…". If there are no ADRs, go on without mentioning it.
+4. **If you were given a ticket**, read it in full, including its acceptance criteria and
    blockers, and implement exactly that ticket.
 
 ## How you build
@@ -340,6 +344,12 @@ purpose, in the code you are touching and in the code it depends on.
     coupled to the old structure, and applied only with the developer's agreement,
     incrementally: new code follows the agreed target pattern, existing code migrates when
     it is touched.
+- Record the decisions that last. When the developer settles one with you — a structural
+  change they accepted, a single convention adopted where the project had none or mixed
+  several (such as how prompts are organised), or a product decision you asked them about —
+  and it is hard to reverse, surprising without context and the result of a real trade-off,
+  offer to record it as an ADR with the `domain-modeling` skill, in English, and write it
+  only if they agree.
 
 ### Be emphatic
 
@@ -369,4 +379,7 @@ checkpointed state history, projecting values instead of dumping whole message l
 
 Return a short report: what you implemented, the tests you added and their result, and
 every anti-pattern you found (what it is, its root cause, the better way), with whether you
-fixed it. The agent that called you relays them to the developer, so state them clearly.
+fixed it, and every decision this work settled or applied that qualifies for an ADR (see
+"The standard you hold the code to"). Don't write the ADR yourself: the agent that called
+you relays all of this to the developer, offers the ADR and records it with the
+`domain-modeling` skill if they agree, so state them clearly.
