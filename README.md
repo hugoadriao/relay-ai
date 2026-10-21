@@ -4,18 +4,101 @@
 
 # RelayAI
 
-Agents and skills for **GitHub Copilot (VS Code)** and **OpenCode** that scope your work and
-interrogate you about it before any code gets written — plus project-aware discovery
-powered by a local knowledge graph ([Graphify](https://github.com/Graphify-Labs/graphify)).
+RelayAI sets up **GitHub Copilot (VS Code)** and **OpenCode**, project by project, to scope
+your work and interrogate you about it before any code gets written, and then to hand the
+implementation to specialist agents. One command, `relay-ai init`, installs the scoping skills
+of [mattpocock/skills](https://github.com/mattpocock/skills), RelayAI's own agents and skills
+for Python, LangGraph and FastAPI, and a local knowledge graph of your code
+([Graphify](https://github.com/Graphify-Labs/graphify)) that the agents query before exploring
+it.
 
 RelayAI doesn't reinvent what already exists: it builds on top of other open-source
 projects and open standards, and adds what's missing between them. See [Credits](#credits).
 
+## How it works
+
+1. You scope the work with mattpocock/skills: `/grill-me` interrogates you about what to
+   build, `/to-spec` turns the conversation into a spec and `/to-tickets` breaks the spec
+   into tickets.
+2. The instructions file RelayAI writes for each platform lists its specialist agents, so
+   `/to-tickets` adds a `**Specialist:** <agent>` line to every ticket whose core work falls
+   under one of them.
+3. `/implement` and `/implement-spec` delegate those tickets to the named specialist as a
+   subagent. You can also pick a specialist yourself (see [What's in it](#whats-in-it)).
+4. While they work, the agents check the Graphify graph before exploring your code and
+   record what they confirmed, so the next task starts from it
+   (see [Exploration memory](#exploration-memory)).
+
+The routing in steps 2 and 3 is done by instructions to the model, not by a dedicated
+command.
+
+## What's in it
+
+- **mattpocock/skills** — the engineering and productivity skills (`grill-me`, `tdd`,
+  `to-spec`, `to-tickets`, `code-review`, `diagnosing-bugs`, …), unmodified. See its README
+  for the full list.
+- **`langgraph-expert`** (RelayAI) — a LangGraph specialist agent for async
+  Python/FastAPI projects, covering the LangChain agents, tools and middleware graphs are
+  built from. Pick it in the agent picker (Copilot) or call it with `@langgraph-expert`
+  (OpenCode). It checks the live LangGraph docs before using an API, works test-first,
+  builds async, stateless nodes and tools that are safe with many concurrent users, and
+  calls out anti-patterns plainly — symptomatic fixes, dead or redundant code,
+  over-engineering, LangGraph misuse — with a simpler way to build the feature.
+- **`fastapi-expert`** (RelayAI) — a FastAPI specialist agent for the application layer
+  around your graphs: the lifespan as the composition root, settings, dependencies, error
+  handling, middleware, WebSockets and SSE, conversation management and tests. Pick it in
+  the agent picker (Copilot) or call it with `@fastapi-expert` (OpenCode). It reads the
+  official FastAPI skill shipped inside the FastAPI installed in your project (since
+  0.134.0), so its API guidance always matches your version, and adds secure, typed
+  WebSocket patterns (handshake checks before `accept`, structured concurrency for
+  cancellation and disconnects). It works with the `langgraph-expert` through a clear
+  contract: the graph and its factory are that agent's, everything around them is this
+  one's. To make the official FastAPI skill available to every agent too, run
+  `uvx library-skills` in your project (`--copy` on Windows without Developer Mode).
+- **`debugging-python`** (RelayAI) — a Python debugging skill the agent loads on its own
+  when debugging, alongside `diagnosing-bugs` and the official `mcp-debugger` skill. It
+  makes the agent observe the real values at the point of failure with a real debugger
+  ([mcp-debugger](https://github.com/debugmcp/mcp-debugger), driving a temporary `debugpy`)
+  instead of guessing, while keeping token use low: shape before values, projections
+  instead of dumping large objects, conditional breakpoints. The debugger runs locally and
+  sends nothing out of your machine. Before each session the agent asks you whether to
+  **launch** the code on your machine or **attach** to it where it runs (a container,
+  for example). The first time a mode works, it records the recipe it worked out — from
+  your compose files, Dockerfiles and uv setup — in `docs/agents/debugging.md`, with a
+  separate compose override (`docs/agents/debugging.compose.yaml`, loopback ports only)
+  so your compose files are never edited. Later sessions reuse the recipe and re-check
+  only what changed. Both files are visible in git for you to review and commit; they
+  hold variable names, never secret values.
+- **`writing-python`** (RelayAI) — the default Python code style every agent writes and
+  reviews with: code in English, ruff with 100 columns and single quotes, absolute imports,
+  mandatory native type hints (PEP 695 generics on 3.12+), no comments explaining code,
+  fail-fast exceptions caught only at the edge. It lists the ruff rules that check it and
+  proposes them when your project has no ruff configuration. Your project's own ruff
+  settings, Python version and documented standards always take precedence.
+- **`auditing-code`** (RelayAI) — audits how your whole application uses each framework
+  against its specialist's rules: LangGraph/LangChain with the `langgraph-expert`, FastAPI
+  with the `fastapi-expert`. Run `/auditing-code` (optionally with `langgraph` or `fastapi`
+  and a folder) or ask an agent to audit the application. Without a framework, it audits
+  every one your project depends on. It only reads the code, starting from the Graphify
+  graph (recording what it located in Graphify's work memory, see
+  [Exploration memory](#exploration-memory)), and writes one English report per framework to
+  `docs/audits/<framework>-<date>.md`: an inventory, then one finding per wrong pattern,
+  with its occurrences, the target pattern, its cost and what it depends on, compared with
+  the previous audit. Each finding is ready to plan with `/to-spec` and `/to-tickets`.
+- **Project discovery** through Graphify's knowledge graph, kept up to date by its git
+  hooks, with a work memory of what earlier tasks found
+  (see [Exploration memory](#exploration-memory)).
+
+The decisions behind all of this are logged in [`SCOPE.md`](SCOPE.md) (in Portuguese).
+
 ## Prerequisites
 
-RelayAI needs uv, and Node.js for its debugger. `relay-ai init` stops with instructions if
-uv is missing. Without Node.js, it still installs everything, configures the debugger and
+RelayAI needs uv, which runs the installer and installs Graphify, and Node.js 22 or newer for
+its debugger. Without Node.js, `init` still installs everything, configures the debugger and
 tells you how to install Node.js; the debugger only starts once Node.js is there.
+
+git is optional: outside a git repository, `init` skips Graphify's git hooks and keeping
+RelayAI's files out of git.
 
 ### uv
 
@@ -53,9 +136,14 @@ From the root of your project:
 uvx --from git+https://github.com/hugoadriao/relay-ai relay-ai init
 ```
 
+To install into another folder, pass its path after `init` (`update` and `uninstall` take
+it too).
+
 `init` asks which platform to install for: **GitHub Copilot (VS Code)**, **OpenCode**, or
 **both**. To skip the question, pass `--platform copilot`, `--platform opencode` or
-`--platform both`.
+`--platform both`; without an interactive terminal, the flag is required. In a project where
+RelayAI is already installed, `init` without `--platform` keeps the platforms you chose
+before.
 
 Then:
 
@@ -93,18 +181,20 @@ OpenCode calls skills with `@` instead:
   or open the skill picker with `/skills`. The `/` list only shows commands, not skills.
 - **OpenCode 1.x:** open the skill picker with `/skills`, or type the skill's whole name
   followed by a space (`/to-spec `). The `/` list doesn't show skills, and pressing Enter
-  while it is open doesn't send the message.
+  while it is open doesn't send the message. OpenCode 1.x also ignores the setting that
+  reserves a skill for you to call (`disable-model-invocation`), so the model may load
+  skills such as `to-spec` or `implement` on its own; 2.x respects it.
 
 ### What `relay-ai init` does
 
 1. Installs the Graphify CLI if it's missing (`uv tool install graphifyy`) and puts it on
    your PATH (`uv tool update-shell`).
-2. Copies the skills — RelayAI's own, the engineering and productivity skills of
-   [mattpocock/skills](https://github.com/mattpocock/skills) and the official skill of
-   [mcp-debugger](https://github.com/debugmcp/mcp-debugger) (from the release tag that
-   matches the debugger RelayAI configures), unmodified, each with its original MIT
-   `LICENSE` — into `.agents/skills/`. If the mcp-debugger skill can't be downloaded,
-   `init` says so and carries on. Skills follow the open
+2. Copies the skills into `.agents/skills/`: RelayAI's own; the engineering and productivity
+   skills of [mattpocock/skills](https://github.com/mattpocock/skills), from its `main`
+   branch; and the official skill of [mcp-debugger](https://github.com/debugmcp/mcp-debugger),
+   from the release tag that matches the debugger RelayAI configures. The third-party skills
+   are copied unmodified, each with its original MIT `LICENSE`. If the mcp-debugger skill
+   can't be downloaded, `init` says so and carries on. Skills follow the open
    [Agent Skills](https://agentskills.io) standard, and `.agents/skills/` is read by both
    VS Code and OpenCode (and other tools), so they're installed once.
 3. For each platform you chose:
@@ -116,13 +206,12 @@ OpenCode calls skills with `@` instead:
      every agent to the `writing-python` style, and turns on Graphify's work memory (see
      [Exploration memory](#exploration-memory));
    - adds the MCP servers the agents use to the platform's config (`.vscode/mcp.json` or
-     `opencode.json`), keeping the entries you already had. On `update`, the entries RelayAI
-     added are refreshed; yours are never touched.
-   - downloads the debugger (mcp-debugger) into npm's cache, after checking that the npm
-     registry answers. It is configured with `npx --prefer-offline`, so once cached it
-     starts without contacting the registry. If Node.js is missing or the registry can't be
-     reached, `init` says how to fix it and carries on.
-4. Sets Graphify up for the platforms you chose, exactly as it's designed to work:
+     `opencode.json`), keeping the entries you already had.
+4. Downloads the debugger (mcp-debugger) into npm's cache, after checking that the npm
+   registry answers. It is configured with `npx --prefer-offline`, so once cached it
+   starts without contacting the registry. If Node.js is missing or the registry can't be
+   reached, `init` says how to fix it and carries on.
+5. Sets Graphify up for the platforms you chose, exactly as it's designed to work:
    - adds RelayAI's agent and skill folders and `docs/audits/` to `.graphifyignore`, so
      the graph describes your code, not the installed agents and skills or old audit
      reports (existing lines are kept);
@@ -136,18 +225,19 @@ OpenCode calls skills with `@` instead:
 
    It does not build the graph: you do, with `/graphify .` (`@graphify .` in OpenCode,
    see above).
-5. Keeps what it installed out of git: the agents and skills, plus the files it created
-   (including `AGENTS.md`), are listed in `.git/info/exclude`, which is local to your clone,
-   so not even that list shows up in git. Graphify's own files (`graphify-out/`,
-   `.gitattributes`, `.opencode/plugins/graphify.js`) stay visible, because Graphify is
-   designed for the graph to be committed and shared. The exceptions are the two files
-   Graphify derives from the work memory, `graphify-out/reflections/LESSONS.md` and
-   `graphify-out/.graphify_learning.json`: they change on every commit and would conflict
-   between branches, and agents rebuild them from the memories at the start of each session
-   (see [Exploration memory](#exploration-memory)). If `init` had to change a file your
-   repository already tracks, it tells you, so you can review that diff.
-6. Records everything it installed or added in `.github/relay-ai.json`, so `update` and
-   `uninstall` touch only what is RelayAI's.
+6. Keeps what it installed out of git: the agents and skills, the files it created
+   (including `AGENTS.md`) and its manifest are listed in `.git/info/exclude`, which is
+   local to your clone, so not even that list shows up in git. Graphify's own files
+   (`graphify-out/`, `.gitattributes`, `.opencode/plugins/graphify.js`) stay visible,
+   because Graphify is designed for the graph to be committed and shared. The exceptions
+   are the two files Graphify derives from the work memory,
+   `graphify-out/reflections/LESSONS.md` and `graphify-out/.graphify_learning.json`: they
+   change on every commit and would conflict between branches, and agents rebuild them from
+   the memories at the start of each session (see [Exploration memory](#exploration-memory)).
+   If `init` had to change a file your repository already tracks, it tells you, so you can
+   review that diff.
+7. Records everything it installed or added in `.github/relay-ai.json` (the manifest), so
+   `update` and `uninstall` touch only what is RelayAI's.
 
 `init` never overwrites your own agents and skills: if one of yours has the same name as
 one RelayAI installs, yours is kept and `init` tells you. Running `init` again with another
@@ -157,7 +247,7 @@ dropped.
 To refresh the knowledge graph by hand, use Graphify's own commands: `graphify update .`
 for code, `/graphify --update` in the chat for docs and images.
 
-### Exploration memory
+## Exploration memory
 
 Once the graph exists, the instructions RelayAI writes tell every agent (including
 subagents) to use Graphify's work memory, so a task doesn't explore from scratch what an
@@ -173,8 +263,9 @@ earlier one already found:
 
 The memories show up in git, so you can review them and share them with your team by
 committing them; each has a unique file name, so memories recorded on different branches
-never conflict. The lessons Graphify derives from them stay out of git. A node only becomes a preferred source after two useful answers, and older
-signals weigh less over time (Graphify's own rules).
+never conflict. The lessons Graphify derives from them stay out of git. A node only becomes
+a preferred source after two useful answers, and older signals weigh less over time
+(Graphify's own rules).
 
 ## Updating
 
@@ -184,14 +275,16 @@ From the root of your project:
 uvx --from git+https://github.com/hugoadriao/relay-ai relay-ai update
 ```
 
-`update` fetches the latest RelayAI and refreshes everything it manages, for the platforms
-you installed it for: agents and skills, mattpocock/skills, the `relay-ai` sections, the
-MCP servers, the git excludes and the graph. It removes what is no longer part of RelayAI —
-including moving skills from older installs out of `.github/skills/` — and ends with a
-summary of what was updated, added and removed.
+`update` needs an existing installation (run `init` first). It fetches the latest RelayAI and
+refreshes everything it manages, for the platforms you installed it for: agents and skills,
+mattpocock/skills, the `relay-ai` sections, the MCP servers it added, Graphify's integration
+and git hooks, and the git excludes. It doesn't rebuild the graph. It removes what is no
+longer part of RelayAI — including moving skills from older installs out of
+`.github/skills/` — and ends with a summary of what was updated, added and removed.
 
-Local edits to the agents and skills RelayAI installed are overwritten, so put your own
-customisations in agents and skills with other names.
+Local edits to the agents, skills and MCP server entries RelayAI installed are overwritten,
+so put your own customizations in agents and skills with other names. MCP servers you added
+yourself are never touched, even if one has the same name as RelayAI's.
 
 Graphify isn't upgraded by `update`, because it's installed machine-wide and other projects
 may use it. Upgrade it when you want with:
@@ -200,8 +293,11 @@ may use it. Upgrade it when you want with:
 uv tool upgrade graphifyy
 ```
 
-If `uvx` ever seems to run an old RelayAI, add `--refresh` to the command to bypass its
-cache.
+If `uvx` ever seems to run an old RelayAI, add `--refresh` to bypass its cache:
+
+```bash
+uvx --refresh --from git+https://github.com/hugoadriao/relay-ai relay-ai update
+```
 
 ## Uninstalling
 
@@ -266,65 +362,6 @@ of these:
 
 From then on it starts from the cache, without the registry.
 
-## What's in it
-
-- Engineering and productivity skills (`grill-me`, `tdd`, `to-spec`, `code-review`,
-  `diagnosing-bugs`, …) from [mattpocock/skills](https://github.com/mattpocock/skills).
-  See its README for the full list.
-- Project discovery through Graphify's knowledge graph, kept up to date by its git hooks.
-- **`langgraph-expert`** (RelayAI) — a LangGraph specialist agent for async
-  Python/FastAPI projects, covering the LangChain agents, tools and middleware graphs are
-  built from. Pick it in the agent picker (Copilot) or call it with
-  `@langgraph-expert` (OpenCode), or let `/implement` and `/implement-spec` delegate
-  LangGraph tickets to it (tickets get a `**Specialist:** langgraph-expert` line from
-  `/to-tickets`). It checks the live LangGraph docs before using an API, works test-first,
-  builds async, stateless nodes and tools that are safe with many concurrent users, and
-  calls out anti-patterns plainly — symptomatic fixes, dead or redundant code,
-  over-engineering, LangGraph misuse — with a simpler way to build the feature.
-- **`fastapi-expert`** (RelayAI) — a FastAPI specialist agent for the application layer
-  around your graphs: the lifespan as the composition root, settings, dependencies, error
-  handling, middleware, WebSockets and SSE, conversation management and tests. It reads
-  the official FastAPI skill shipped inside the FastAPI installed in your project (since
-  0.134.0), so its API guidance always matches your version, and adds secure, typed
-  WebSocket patterns (handshake checks before `accept`, structured concurrency for
-  cancellation and disconnects). It works with the `langgraph-expert` through a clear
-  contract: the graph and its factory are that agent's, everything around them is this
-  one's. To make the official FastAPI skill available to every agent too, run
-  `uvx library-skills` in your project (`--copy` on Windows without Developer Mode).
-- **`debugging-python`** (RelayAI) — a Python debugging skill the agent loads on its own
-  when debugging, alongside `diagnosing-bugs`. It makes the agent observe the real values
-  at the point of failure with a real debugger
-  ([mcp-debugger](https://github.com/debugmcp/mcp-debugger), driving a temporary `debugpy`)
-  instead of guessing, while keeping token use low: shape before values, projections
-  instead of dumping large objects, conditional breakpoints. The debugger runs locally and
-  sends nothing out of your machine. Before each session the agent asks you whether to
-  **launch** the code on your machine or **attach** to it where it runs (a container,
-  for example). The first time a mode works, it records the recipe it worked out — from
-  your compose files, Dockerfiles and uv setup — in `docs/agents/debugging.md`, with a
-  separate compose override (`docs/agents/debugging.compose.yaml`, loopback ports only)
-  so your compose files are never edited. Later sessions reuse the recipe and re-check
-  only what changed. Both files are visible in git for you to review and commit; they
-  hold variable names, never secret values.
-- **`writing-python`** (RelayAI) — the default Python code style every agent writes and
-  reviews with: code in English, ruff with 100 columns and single quotes, absolute imports,
-  mandatory native type hints (PEP 695 generics on 3.12+), no comments explaining code,
-  fail-fast exceptions caught only at the edge. It lists the ruff rules that check it and
-  proposes them when your project has no ruff configuration. Your project's own ruff
-  settings, Python version and documented standards always take precedence.
-- **`auditing-code`** (RelayAI) — audits how your whole application uses each framework
-  against its specialist's rules: LangGraph/LangChain with the `langgraph-expert`, FastAPI
-  with the `fastapi-expert`. Run `/auditing-code` (optionally with `langgraph` or `fastapi`
-  and a folder) or ask an agent to audit the application. Without a framework, it audits
-  every one your project depends on. It only reads the code, starting from the Graphify
-  graph (recording what it located in Graphify's work memory, see
-  [Exploration memory](#exploration-memory)), and writes one English report per framework to
-  `docs/audits/<framework>-<date>.md`:
-  an inventory, then one finding per wrong pattern, with its occurrences, the target
-  pattern, its cost and what it depends on, compared with the previous audit. Each
-  finding is ready to plan with `/to-spec` and `/to-tickets`.
-
-See `SCOPE.md` for the full decision log behind this project.
-
 ## Credits
 
 RelayAI exists because of the work of other developers. We use their projects as they
@@ -341,6 +378,7 @@ goes to their authors, and bugs or ideas about them belong upstream.
 | [FastAPI agent skill](https://github.com/fastapi/fastapi) | [Sebastián Ramírez](https://github.com/tiangolo) | The official FastAPI skill, read by the `fastapi-expert` from the FastAPI installed in your project. | MIT |
 | [library-skills](https://github.com/tiangolo/library-skills) | [Sebastián Ramírez](https://github.com/tiangolo) | Optional: installs library skills, such as FastAPI's, into `.agents/skills/` for every agent. | MIT |
 | [uv](https://github.com/astral-sh/uv) | [Astral](https://github.com/astral-sh) | Runs the RelayAI installer and installs Graphify. | MIT / Apache-2.0 |
+| [PyYAML](https://github.com/yaml/pyyaml) | [The YAML Project](https://github.com/yaml) | Reads the agents' frontmatter and writes each platform's version of the agent files. | MIT |
 | [Agent Skills](https://agentskills.io) | Anthropic and contributors | The open skill format (`SKILL.md`) RelayAI's skills follow. | open standard |
 | [AGENTS.md](https://agents.md) | Agentic AI Foundation (Linux Foundation) | The open instructions file shared by Copilot and OpenCode. | open standard |
 
