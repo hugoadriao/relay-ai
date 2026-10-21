@@ -69,19 +69,31 @@ Then:
    /graphify .
    ```
 
-   Graphify reads your code and docs and writes the graph to `graphify-out/`. RelayAI
-   doesn't build it for you; after this first build, Graphify's git hooks keep it up
-   to date.
+   In OpenCode, `@graphify .` (see [Calling skills](#calling-skills)). Graphify reads your
+   code and docs and writes the graph to `graphify-out/`. RelayAI doesn't build it for
+   you; after this first build, Graphify's git hooks keep it up to date.
 3. Once per repository, in the chat, run:
 
    ```
    /setup-matt-pocock-skills
    ```
 
-   It asks how your project tracks issues and where its docs live, and saves that to
-   `AGENTS.md`, which both Copilot and OpenCode read. `init` creates an empty `AGENTS.md`
-   for this when your project has neither `AGENTS.md` nor `CLAUDE.md`.
+   In OpenCode, `@setup-matt-pocock-skills`. It asks how your project tracks issues and
+   where its docs live, and saves that to `AGENTS.md`, which both Copilot and OpenCode
+   read. `init` creates an empty `AGENTS.md` for this when your project has neither
+   `AGENTS.md` nor `CLAUDE.md`.
 4. The first time an MCP server starts, your editor may ask you to trust it.
+
+### Calling skills
+
+This README writes skills the way Copilot calls them, with `/`: `/graphify .`, `/to-spec`.
+OpenCode calls skills with `@` instead:
+
+- **OpenCode 2.x:** type `@` and pick the skill from the list (`@graphify .`, `@to-spec`),
+  or open the skill picker with `/skills`. The `/` list only shows commands, not skills.
+- **OpenCode 1.x:** open the skill picker with `/skills`, or type the skill's whole name
+  followed by a space (`/to-spec `). The `/` list doesn't show skills, and pressing Enter
+  while it is open doesn't send the message.
 
 ### What `relay-ai init` does
 
@@ -122,7 +134,8 @@ Then:
    - `graphify hook install` — git hooks that update the graph on every commit and branch
      checkout once it exists (skipped if the project isn't a git repository).
 
-   It does not build the graph: you do, with `/graphify .` (see above).
+   It does not build the graph: you do, with `/graphify .` (`@graphify .` in OpenCode,
+   see above).
 5. Keeps what it installed out of git: the agents and skills, plus the files it created
    (including `AGENTS.md`), are listed in `.git/info/exclude`, which is local to your clone,
    so not even that list shows up in git. Graphify's own files (`graphify-out/`,
