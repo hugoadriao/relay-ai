@@ -258,7 +258,9 @@ earlier one already found:
   useful, skips the dead ends and applies past corrections, checking them in the code first;
 - after each graph query it has checked in the code, it records the result with
   `graphify save-result` in `graphify-out/memory/`, in English: `useful`, `corrected` (with
-  where the answer really is) or `dead_end` (the answer doesn't exist in the code);
+  where the answer really is) or `dead_end` (the answer doesn't exist in the code). It cites
+  the nodes by name, and by their id when the name is shared by several nodes (methods, or
+  functions such as `main()`), so a lesson never moves to another function with the same name;
 - at the end of the task, it tells you in one line how many memories it recorded.
 
 The memories show up in git, so you can review them and share them with your team by

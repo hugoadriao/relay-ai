@@ -40,7 +40,12 @@ what earlier sessions learned about this code and leaves what it learned for the
 2. After each graph query (`graphify query`, `path` or `explain`), once you have checked its
    answer in the code, record it with `graphify save-result`: `--question`, `--answer` with
    `file:line` references, `--type` (`query`, `path_query` or `explain`), `--nodes` with the
-   labels of the nodes the answer cites, and one `--outcome`:
+   labels of the nodes the answer cites, and one `--outcome`. When a label belongs to more than
+   one node, cite that node by its id instead, so the lesson stays with it. Method labels carry
+   no class name (`.get()`, `.__init__()`) and `graphify query` lists only the nodes in its
+   subgraph, so before citing a method or a function with a common name (`main()`, `run()`),
+   run `graphify explain "<label>"`: when it answers "Ambiguous", it lists each node's file and
+   id. The outcomes:
    - `useful`: the cited nodes answered the question;
    - `corrected`, with `--correction` saying where the answer really is (`file:line` or
      symbol): the graph pointed to the wrong place and the answer came from a search or a file
