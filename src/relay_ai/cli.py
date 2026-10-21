@@ -6,7 +6,7 @@ from relay_ai import console
 from relay_ai.errors import SetupError
 from relay_ai.graphify import GRAPHIFY_GRAPH_FILE
 from relay_ai.install import Changes, install, installed_manifest
-from relay_ai.platforms import PLATFORMS, Platform, platforms_named
+from relay_ai.platforms import COPILOT, OPENCODE, PLATFORMS, Platform, platforms_named
 from relay_ai.uninstall import uninstall
 
 PLATFORM_CHOICES = {
@@ -67,18 +67,18 @@ def _init_platforms(args: argparse.Namespace, project: Path) -> list[Platform] |
     return _ask_platforms()
 
 
-def _next_steps(project: Path, platforms: list[str]) -> None:
-    if 'copilot' in platforms:
+def _next_steps(project: Path, platforms: list[Platform]) -> None:
+    if COPILOT in platforms:
         console.info(
             'VS Code: run "Developer: Reload Window" so it loads the agents, skills and MCP '
             'servers (and so `graphify` is on PATH for agents).'
         )
-    if 'opencode' in platforms:
+    if OPENCODE in platforms:
         console.info('OpenCode: restart it so it loads the agents, skills and MCP servers.')
     if not (project / GRAPHIFY_GRAPH_FILE).exists():
         console.info(
-            "Next, build the knowledge graph: type `/graphify .` in the chat. Graphify's git "
-            'hooks keep it up to date after that.'
+            f'Next, build the knowledge graph in the chat: {_skill_call(platforms, "graphify .")}. '
+            "Graphify's git hooks keep it up to date after that."
         )
 
 
@@ -108,7 +108,14 @@ def _run(args: argparse.Namespace) -> None:
     else:
         install(project, platforms=_init_platforms(args, project), update=False)
     manifest = installed_manifest(project)
-    _next_steps(project, manifest.platforms if manifest is not None else [])
+    platforms = platforms_named(manifest.platforms if manifest is not None else [])
+    _next_steps(project, platforms)
     if args.command == 'init':
-        console.info('Then run /setup-matt-pocock-skills once for this repository.')
+        setup = _skill_call(platforms, 'setup-matt-pocock-skills')
+        console.info(f'Then, once for this repository: {setup}.')
     console.info('Done.')
+
+
+def _skill_call(platforms: list[Platform], skill: str) -> str:
+    calls = [f'`{platform.skill_prefix}{skill}` in {platform.label}' for platform in platforms]
+    return ' or '.join(calls)

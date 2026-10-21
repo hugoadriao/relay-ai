@@ -16,6 +16,7 @@ class Platform:
     mcp_config: Path
     mcp_key: str
     name: str
+    skill_prefix: str
 
 
 COPILOT = Platform(
@@ -29,6 +30,7 @@ COPILOT = Platform(
     mcp_config=Path('.vscode') / 'mcp.json',
     mcp_key='servers',
     name='copilot',
+    skill_prefix='/',
 )
 OPENCODE = Platform(
     agent_suffix='.md',
@@ -41,6 +43,7 @@ OPENCODE = Platform(
     mcp_config=Path('opencode.json'),
     mcp_key='mcp',
     name='opencode',
+    skill_prefix='@',
 )
 PLATFORMS = (COPILOT, OPENCODE)
 
