@@ -56,10 +56,13 @@ command.
   one's. To make the official FastAPI skill available to every agent too, run
   `uvx library-skills` in your project (`--copy` on Windows without Developer Mode).
 - **Decisions as ADRs** — both specialists read the ADRs in `docs/adr/` that touch their
-  work before proposing a structural change, and don't propose again what one settled. When
-  you settle a lasting decision with them (a structural change, a single convention, a
-  product policy), they offer to record it as an ADR, in English, with the `domain-modeling`
-  skill of mattpocock/skills, and write it only if you agree.
+  work before proposing a structural change, and don't propose again what one settled; when
+  the friction is worth reopening a decision, they say so and name the ADR. Runtime and
+  correctness problems are still fixed, naming the ADR they contradict. When you settle a
+  lasting decision with them (a structural change, a single convention, a product policy),
+  they offer to record it as an ADR, in English, with the `domain-modeling` skill of
+  mattpocock/skills, and write it only if you agree. When a specialist runs as a subagent,
+  it reports the decision and the agent you're talking to makes the offer.
 - **`debugging-python`** (RelayAI) — a Python debugging skill the agent loads on its own
   when debugging, alongside `diagnosing-bugs` and the official `mcp-debugger` skill. It
   makes the agent observe the real values at the point of failure with a real debugger
@@ -90,9 +93,9 @@ command.
   `docs/audits/<framework>-<date>.md`: an inventory, then one finding per wrong pattern,
   with its occurrences, the target pattern, its cost and what it depends on, compared with
   the previous audit. Each finding is ready to plan with `/to-spec` and `/to-tickets`. A
-  deviation your ADRs accepted is reported as conforming, not reopened on every audit, and
-  once a structural finding's target pattern is agreed, the skill offers to record it as an
-  ADR.
+  structural deviation your ADRs accepted is reported as conforming, not reopened on every
+  audit (a correctness problem stays a finding), and once a structural finding's target
+  pattern is agreed, the skill offers to record it as an ADR.
 - **Project discovery** through Graphify's knowledge graph, kept up to date by its git
   hooks, with a work memory of what earlier tasks found
   (see [Exploration memory](#exploration-memory)).
@@ -268,7 +271,8 @@ earlier one already found:
   `graphify save-result` in `graphify-out/memory/`, in English: `useful`, `corrected` (with
   where the answer really is) or `dead_end` (the answer doesn't exist in the code). It cites
   the nodes by name, and by their id when the name is shared by several nodes (methods, or
-  functions such as `main()`), so a lesson never moves to another function with the same name;
+  functions such as `main()`), so a lesson stays with its node instead of moving to another
+  one with the same name;
 - at the end of the task, it tells you in one line how many memories it recorded.
 
 The memories show up in git, so you can review them and share them with your team by
