@@ -40,8 +40,8 @@ reports.
 
 - **Read only.** Read files, query the Graphify graph and search text. The only files you
   write are the reports and Graphify's work memory (step 2): the memories in
-  `graphify-out/memory/` and the lessons `graphify reflect` derives from them. Never edit
-  code, never commit.
+  `graphify-out/memory/` and the lessons `graphify reflect` derives from them; at the hand
+  over, also an ADR the developer agreed to (step 6). Never edit code, never commit.
 - **Never run the project's code or tests.** They can have side effects (databases, external
   APIs, LLM costs). To state a consequence, cite the measured data in the agent's rules
   instead of measuring in the project.
@@ -98,6 +98,13 @@ code with the rules and with the anti-pattern list, and judging it by its purpos
   report of the profile that owns that code (each profile says what it owns), never to both.
   When the other profile is audited too, mention the finding there under "Not covered" with
   the other report's path.
+- **Decisions already made.** Read the ADRs in `docs/adr/` that touch the area, as the
+  specialist does before proposing a structural change. A structural deviation from the
+  specialist's rules that an ADR accepted is not a finding: record it under "Conforming" as
+  "accepted by ADR-NNNN", so each audit doesn't reopen what the team already decided. Make it
+  a finding only when the friction is real enough to reopen the decision, marked
+  "contradicts ADR-NNNN" with the reason. A `correctness` problem stays a finding even when an
+  ADR accepted it, marked the same way.
 - Record what was checked and follows the rules ("Conforming") and what couldn't be checked
   ("Not covered"). An area without findings still appears, so a reader can tell "checked
   and fine" from "not looked at".
@@ -106,7 +113,8 @@ code with the rules and with the anti-pattern list, and judging it by its purpos
 
 - Look for the latest previous report of the profile, `docs/audits/<prefix>-*.md`. If there
   is one, reuse its slugs for the same patterns and fill in "Since last audit": findings
-  resolved, still open (with the occurrence count before and now) and new.
+  resolved, accepted by an ADR since then, still open (with the occurrence count before and
+  now) and new.
 - Write `docs/audits/<prefix>-<YYYY-MM-DD>.md` (add `-2`, `-3` if that name exists), using
   the structure in [report-template.md](report-template.md).
 
@@ -118,7 +126,10 @@ code with the rules and with the anti-pattern list, and judging it by its purpos
    `/to-spec` reads only the conversation, and tell the developer to run `/to-spec` and then
    `/to-tickets`.
 3. For a `structural` finding, use the `grilling` skill first to settle the target pattern,
-   its cost and how existing code migrates. Then restate the agreed finding in the
-   conversation and tell the developer to run `/to-spec` and then `/to-tickets`.
+   its cost and how existing code migrates. Once it is agreed, offer to record it as an ADR
+   with the `domain-modeling` skill, as the specialist's "The standard you hold the code to"
+   says for an accepted structural change (in English, and only if the developer agrees).
+   Then restate the agreed finding in the conversation and tell the developer to run
+   `/to-spec` and then `/to-tickets`.
 
 Never run `/to-spec` or `/to-tickets` yourself: the developer decides when to plan.

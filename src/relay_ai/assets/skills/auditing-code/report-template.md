@@ -32,6 +32,7 @@ Suggested sequence:
 <!-- Only when there is a previous report. -->
 
 - Resolved: `<slug>`, ...
+- Accepted by an ADR: `<slug>` (ADR-NNNN), ...
 - Still open: `<slug>` (<occurrences before> → <occurrences now>), ...
 - New: `<slug>`, ...
 
@@ -67,12 +68,15 @@ Suggested sequence:
 - **Cost and risk:** <size of the change, tests coupled to the current structure, behaviour
   that may change>
 - **Depends on:** `<slug>`, ... | none
+- **ADR:** none | contradicts ADR-NNNN (<title>): <why it is worth reopening>
 
 ## Conforming
 
-<!-- Per area, what was checked and already follows the rules. -->
+<!-- Per area, what was checked and already follows the rules, and the deviations from the
+     specialist's rules that an ADR accepted. -->
 
 - **<Area>:** <what was checked and is right>
+- **<Area>:** <the deviation>, accepted by ADR-NNNN (<title>)
 
 ## Not covered
 

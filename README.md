@@ -89,7 +89,10 @@ command.
   [Exploration memory](#exploration-memory)), and writes one English report per framework to
   `docs/audits/<framework>-<date>.md`: an inventory, then one finding per wrong pattern,
   with its occurrences, the target pattern, its cost and what it depends on, compared with
-  the previous audit. Each finding is ready to plan with `/to-spec` and `/to-tickets`.
+  the previous audit. Each finding is ready to plan with `/to-spec` and `/to-tickets`. A
+  deviation your ADRs accepted is reported as conforming, not reopened on every audit, and
+  once a structural finding's target pattern is agreed, the skill offers to record it as an
+  ADR.
 - **Project discovery** through Graphify's knowledge graph, kept up to date by its git
   hooks, with a work memory of what earlier tasks found
   (see [Exploration memory](#exploration-memory)).

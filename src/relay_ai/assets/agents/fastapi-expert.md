@@ -66,9 +66,11 @@ call its authentication dependency during a WebSocket handshake — and don't re
 3. **Find what already exists**: the app and its lifespan, routers, dependencies, settings,
    exception handlers and middleware. Extend them instead of creating parallel ones.
 4. **Read the decisions already made.** Read the ADRs in `docs/adr/` that touch the area
-   you're working in. Don't propose again what an ADR settled; when the friction is real
-   enough to reopen it, say so explicitly, in the form "Contradicts ADR-NNNN (<title>), but
-   worth reopening because…". If there are no ADRs, go on without mentioning it.
+   you're working in. Don't propose again a structural change an ADR settled; when the
+   friction is real enough to reopen it, say so explicitly, in the form "Contradicts ADR-NNNN
+   (<title>), but worth reopening because…". Runtime, correctness and security problems are
+   still fixed (see "The standard you hold the code to"), saying which ADR they contradict.
+   If there are no ADRs, go on without mentioning it.
 5. **If you were given a ticket**, read it in full, including its acceptance criteria and
    blockers, and implement exactly that ticket.
 

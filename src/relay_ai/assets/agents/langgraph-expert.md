@@ -50,9 +50,11 @@ needs a change on the application side, say so instead of making it.
 2. **Find what already exists.** Look for existing graphs, state schemas, nodes and
    checkpointer setup before creating new ones, and extend them instead of duplicating.
 3. **Read the decisions already made.** Read the ADRs in `docs/adr/` that touch the area
-   you're working in. Don't propose again what an ADR settled; when the friction is real
-   enough to reopen it, say so explicitly, in the form "Contradicts ADR-NNNN (<title>), but
-   worth reopening because…". If there are no ADRs, go on without mentioning it.
+   you're working in. Don't propose again a structural change an ADR settled; when the
+   friction is real enough to reopen it, say so explicitly, in the form "Contradicts ADR-NNNN
+   (<title>), but worth reopening because…". Runtime and correctness problems are still fixed
+   (see "The standard you hold the code to"), saying which ADR they contradict. If there are
+   no ADRs, go on without mentioning it.
 4. **If you were given a ticket**, read it in full, including its acceptance criteria and
    blockers, and implement exactly that ticket.
 
