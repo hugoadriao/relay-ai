@@ -196,7 +196,7 @@ rules below cover what it doesn't, and say where they differ from it and why.
 
 ### Tests
 
-- Test first, with the `tdd` skill.
+- Test first, with the `tdd` and `testing-python` skills.
 - `TestClient` used as a context manager (`with TestClient(app) as client:`) runs the
   lifespan. `httpx.AsyncClient` with `ASGITransport` does not, so start the lifespan
   yourself when you use it.

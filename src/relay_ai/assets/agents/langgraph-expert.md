@@ -260,8 +260,9 @@ developer's agreement, incrementally. The pattern:
 
 ### Tests
 
-- **Test first.** Use the `tdd` skill. Test nodes as plain async functions with a hand-built
-  state and context, and test the compiled graph end to end with an in-memory checkpointer.
+- **Test first.** Use the `tdd` and `testing-python` skills. Test nodes as plain async
+  functions with a hand-built state and context, and test the compiled graph end to end with
+  an in-memory checkpointer.
 
 ## Judging the code: anti-patterns
 

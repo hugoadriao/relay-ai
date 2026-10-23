@@ -26,6 +26,7 @@ As seções "Planejado" e "Em aberto" do `SCOPE.md` são o trabalho pendente mai
 - Validar a memória de exploração (#49) num projeto real e medir o ganho (checklist em
   "Planejado").
 - Validar os ADRs nos especialistas (#51) num projeto real (checklist em "Planejado").
+- Validar a `testing-python` (#52) num projeto real (checklist em "Planejado").
 - Conteúdo próprio novo (outro especialista ou skill): grillar nome, escopo e sobreposição
   com o mattpocock/skills antes de escrever; nada deve ser inventado além do que está
   decidido sem perguntar.
