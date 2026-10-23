@@ -83,6 +83,15 @@ command.
   fail-fast exceptions caught only at the edge. It lists the ruff rules that check it and
   proposes them when your project has no ruff configuration. Your project's own ruff
   settings, Python version and documented standards always take precedence.
+- **`testing-python`** (RelayAI) — how every agent writes Python tests, alongside the `tdd`
+  skill of mattpocock/skills. It uses the test tools your project already declares (pytest
+  with pytest-mock, pytest with `unittest.mock`, or `unittest`) and never asks you to install
+  one, mocks only what lies outside the code under test, and covers every line and branch of
+  the change through public interfaces. Tests are hermetic: they pass with your `.env` empty,
+  never because it is filled in, and the agent never reads it. They stay fast, because a test
+  pays only for what it verifies (no hashing a hundred passwords to test a login). The agent
+  runs your whole suite before and after a change, and points out existing tests that don't
+  follow these rules, changing them only if you agree.
 - **`auditing-code`** (RelayAI) — audits how your whole application uses each framework
   against its specialist's rules: LangGraph/LangChain with the `langgraph-expert`, FastAPI
   with the `fastapi-expert`. Run `/auditing-code` (optionally with `langgraph` or `fastapi`
@@ -214,7 +223,8 @@ OpenCode calls skills with `@` instead:
    - lists the specialist agents in a `relay-ai` section of the platform's instructions
      file (`.github/copilot-instructions.md` for Copilot, `AGENTS.md` for OpenCode), so
      ticket-writing and implementation skills route specialist work to them, points
-     every agent to the `writing-python` style, and turns on Graphify's work memory (see
+     every agent to the `writing-python` style and the `testing-python` rules for tests,
+     and turns on Graphify's work memory (see
      [Exploration memory](#exploration-memory));
    - adds the MCP servers the agents use to the platform's config (`.vscode/mcp.json` or
      `opencode.json`), keeping the entries you already had.

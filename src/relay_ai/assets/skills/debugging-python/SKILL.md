@@ -96,7 +96,8 @@ None of these is a fix; each one only hides the bug:
 - pinning a dependency version without knowing what broke.
 
 If a value arrived wrong, go upstream to the code that produced it and fix it there. Write
-the fix and its regression test following the `writing-python` skill.
+the fix following the `writing-python` skill, and its regression test following the
+`testing-python` skill.
 
 ## Tools
 

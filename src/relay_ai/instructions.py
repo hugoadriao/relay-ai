@@ -27,6 +27,12 @@ Python code in this project is written and reviewed following the `writing-pytho
 (`.agents/skills/writing-python/SKILL.md`), unless the project's own configuration or coding
 standard says otherwise.
 
+## Python tests (RelayAI)
+
+Python tests in this project are written and reviewed following the `testing-python` skill
+(`.agents/skills/testing-python/SKILL.md`), together with the `tdd` skill, unless the project's
+own testing standard says otherwise.
+
 ## Exploration memory (RelayAI)
 
 When `graphify-out/graph.json` exists, use Graphify's work memory, so that each task starts from
