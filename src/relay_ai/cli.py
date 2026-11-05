@@ -88,7 +88,6 @@ def _report_update(changes: Changes) -> None:
         print(f'    + {label}')
     for label in changes.removed:
         print(f'    - {label} (no longer part of RelayAI)')
-    console.info('Graphify is not upgraded by RelayAI. To upgrade it: uv tool upgrade graphifyy')
 
 
 def _run(args: argparse.Namespace) -> None:
@@ -106,13 +105,15 @@ def _run(args: argparse.Namespace) -> None:
         changes = install(project, platforms=None, update=True)
         _report_update(changes)
     else:
-        install(project, platforms=_init_platforms(args, project), update=False)
+        changes = install(project, platforms=_init_platforms(args, project), update=False)
     manifest = installed_manifest(project)
     platforms = platforms_named(manifest.platforms if manifest is not None else [])
     _next_steps(project, platforms)
     if args.command == 'init':
         setup = _skill_call(platforms, 'setup-matt-pocock-skills')
         console.info(f'Then, once for this repository: {setup}.')
+    for warning in changes.warnings:
+        console.warn(warning)
     console.info('Done.')
 
 

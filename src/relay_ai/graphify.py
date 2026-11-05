@@ -1,3 +1,4 @@
+import re
 import shutil
 from pathlib import Path
 
@@ -15,8 +16,27 @@ GRAPHIFY_DERIVED_FILES = (
 )
 GRAPHIFY_GRAPH_FILE = GRAPHIFY_OUT_DIR / 'graph.json'
 GRAPHIFY_IGNORE_FILE = '.graphifyignore'
+GRAPHIFY_MINIMUM_VERSION = (0, 9, 94)
 GRAPHIFY_PACKAGE = 'graphifyy'
+GRAPHIFY_UPGRADE_COMMAND = f'uv tool install {GRAPHIFY_PACKAGE}@latest'
+GRAPHIFY_VERSION_PATTERN = re.compile(r'graphify (\d+)\.(\d+)\.(\d+)')
+OUTDATED_MESSAGE = (
+    'Graphify {found} is older than {minimum}, the version RelayAI recommends: older versions '
+    'write an OpenCode plugin that OpenCode 2 fails to load. {fix}'
+)
 UV_INSTALL_URL = 'https://docs.astral.sh/uv/getting-started/installation/'
+
+type Version = tuple[int, int, int]
+
+
+def check_graphify_version(executable: str) -> str | None:
+    version = _read_version(executable)
+    label = f'Graphify {_format_version(version)}' if version is not None else 'Graphify'
+    console.info(f'{label} found at {executable}')
+    warning = _version_warning(executable, version)
+    if warning is not None:
+        console.warn(warning)
+    return warning
 
 
 def configure_project(
@@ -43,7 +63,6 @@ def configure_project(
 def ensure_graphify() -> str:
     executable = shutil.which('graphify')
     if executable is not None:
-        console.info(f'Graphify found at {executable}')
         return executable
 
     uv = shutil.which('uv')
@@ -97,3 +116,52 @@ def _add_to_graphify_ignore(project: Path, pattern: str) -> bool:
     separator = '\n' if content and not content.endswith('\n') else ''
     write_text(ignore_file, f'{content}{separator}{pattern}\n', line_ending(content))
     return True
+
+
+def _format_version(version: Version) -> str:
+    return '.'.join(str(part) for part in version)
+
+
+def _installed_by_uv(executable: str) -> bool:
+    uv = shutil.which('uv')
+    if uv is None:
+        return False
+    try:
+        bin_dir = capture([uv, 'tool', 'dir', '--bin'])
+        tool_dir = capture([uv, 'tool', 'dir'])
+    except SetupError:
+        return False
+    in_bin_dir = Path(executable).parent.resolve() == Path(bin_dir).resolve()
+    return in_bin_dir and (Path(tool_dir) / GRAPHIFY_PACKAGE).is_dir()
+
+
+def _read_version(executable: str) -> Version | None:
+    try:
+        output = capture([executable, '--version'])
+    except SetupError:
+        return None
+    match = GRAPHIFY_VERSION_PATTERN.fullmatch(output)
+    if match is None:
+        return None
+    major, minor, patch = (int(part) for part in match.groups())
+    return major, minor, patch
+
+
+def _version_warning(executable: str, version: Version | None) -> str | None:
+    minimum = _format_version(GRAPHIFY_MINIMUM_VERSION)
+    if version is None:
+        return (
+            f'Could not read the Graphify version from `{executable} --version`; RelayAI '
+            f'recommends Graphify {minimum} or newer.'
+        )
+    if version >= GRAPHIFY_MINIMUM_VERSION:
+        return None
+    if _installed_by_uv(executable):
+        fix = f'To upgrade it: {GRAPHIFY_UPGRADE_COMMAND}'
+    else:
+        fix = (
+            f'RelayAI could not confirm it was installed with uv ({executable}), so upgrade it '
+            f'the way you installed it, for example pipx upgrade {GRAPHIFY_PACKAGE} or pip '
+            f'install --upgrade {GRAPHIFY_PACKAGE}.'
+        )
+    return OUTDATED_MESSAGE.format(found=_format_version(version), fix=fix, minimum=minimum)

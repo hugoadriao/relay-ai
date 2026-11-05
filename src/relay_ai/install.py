@@ -19,6 +19,7 @@ from relay_ai.git import (
 from relay_ai.graphify import (
     GRAPHIFY_DERIVED_FILES,
     GRAPHIFY_IGNORE_FILE,
+    check_graphify_version,
     configure_project,
     ensure_graphify,
     remove_from_graphify_ignore,
@@ -60,6 +61,7 @@ class Changes:
     added: list[str]
     removed: list[str]
     updated: list[str]
+    warnings: list[str]
 
 
 def install(project: Path, platforms: list[Platform] | None, update: bool) -> Changes:
@@ -78,6 +80,7 @@ def install(project: Path, platforms: list[Platform] | None, update: bool) -> Ch
     names = ', '.join(platform.label for platform in platforms)
     console.info(f'{"Updating" if update else "Setting up"} RelayAI in {project} for {names}')
     graphify = ensure_graphify()
+    graphify_warning = check_graphify_version(graphify)
     preexisting = [
         path
         for path in SHARED_FILES
@@ -158,6 +161,7 @@ def install(project: Path, platforms: list[Platform] | None, update: bool) -> Ch
         added=sorted(after - before),
         removed=sorted(before - after),
         updated=sorted(after & before),
+        warnings=[graphify_warning] if graphify_warning is not None else [],
     )
 
 
