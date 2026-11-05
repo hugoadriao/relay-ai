@@ -43,6 +43,18 @@ def check_path_length(project: Path) -> None:
     )
 
 
+def stdin_is_console() -> bool:
+    if sys.platform != 'win32':
+        return True
+
+    import ctypes
+    import msvcrt
+
+    mode = ctypes.c_uint32()
+    handle = msvcrt.get_osfhandle(sys.stdin.fileno())
+    return bool(ctypes.windll.kernel32.GetConsoleMode(handle, ctypes.byref(mode)))
+
+
 def _long_paths_enabled() -> bool:
     import winreg
 

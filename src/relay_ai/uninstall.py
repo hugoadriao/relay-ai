@@ -39,7 +39,7 @@ def uninstall(project: Path, assume_yes: bool, graphify: bool) -> bool:
     for item in plan:
         print(f'    - {item}')
     print('    Nothing else is touched: your own agents, skills and settings stay as they are.')
-    if not assume_yes and not _confirm():
+    if not assume_yes and not console.confirm('Remove these?', default=False):
         console.info('Nothing was removed.')
         return False
 
@@ -65,14 +65,6 @@ def uninstall(project: Path, assume_yes: bool, graphify: bool) -> bool:
 
     console.info('RelayAI was removed from this project.')
     return True
-
-
-def _confirm() -> bool:
-    try:
-        answer = input('Remove these? [y/N] ')
-    except EOFError:
-        return False
-    return answer.strip().lower() in ('y', 'yes')
 
 
 def _delete_if_empty(path: Path) -> None:

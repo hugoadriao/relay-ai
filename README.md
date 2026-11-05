@@ -113,9 +113,10 @@ The decisions behind all of this are logged in [`SCOPE.md`](SCOPE.md) (in Portug
 
 ## Prerequisites
 
-RelayAI needs uv, which runs the installer and installs Graphify, and Node.js 22 or newer for
-its debugger. Without Node.js, `init` still installs everything, configures the debugger and
-tells you how to install Node.js; the debugger only starts once Node.js is there.
+RelayAI needs uv, which runs the installer and installs Graphify 0.9.94 or newer, and
+Node.js 22 or newer for its debugger. Without Node.js, `init` still installs everything,
+configures the debugger and tells you how to install Node.js; the debugger only starts once
+Node.js is there.
 
 git is optional: outside a git repository, `init` skips Graphify's git hooks and keeping
 RelayAI's files out of git.
@@ -127,6 +128,14 @@ installs Graphify.
 
 - Windows (PowerShell): `powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"`
 - macOS / Linux: `curl -LsSf https://astral.sh/uv/install.sh | sh`
+
+### Graphify 0.9.94 or newer
+
+You don't need to install [Graphify](https://github.com/Graphify-Labs/graphify) yourself:
+`init` installs it with uv when it's missing. If you already have an older one, `init` and
+`update` tell you and offer to upgrade it (see step 1 of
+[What `relay-ai init` does](#what-relay-ai-init-does)). Older versions write an OpenCode plugin
+that OpenCode 2 fails to load.
 
 ### Node.js 22 or newer
 
@@ -208,7 +217,13 @@ OpenCode calls skills with `@` instead:
 ### What `relay-ai init` does
 
 1. Installs the Graphify CLI if it's missing (`uv tool install graphifyy`) and puts it on
-   your PATH (`uv tool update-shell`).
+   your PATH (`uv tool update-shell`). Then it checks Graphify's version. Below 0.9.94, the
+   version RelayAI was tested with, it tells you, and if Graphify was installed with uv and
+   you're in an interactive terminal, it asks whether to upgrade now with
+   `uv tool install graphifyy@latest`, which upgrades Graphify for every project on your
+   machine. If you say no, if there's no terminal to ask in, or if Graphify was installed
+   another way (pipx, pip), `init` carries on and repeats the warning at the end, with how to
+   upgrade. RelayAI never upgrades Graphify without your yes.
 2. Copies the skills into `.agents/skills/`: RelayAI's own; the engineering and productivity
    skills of [mattpocock/skills](https://github.com/mattpocock/skills), from its `main`
    branch; and the official skill of [mcp-debugger](https://github.com/debugmcp/mcp-debugger),
@@ -239,7 +254,9 @@ OpenCode calls skills with `@` instead:
    - connects Graphify to each platform, which also installs its `/graphify` skill:
      `graphify vscode install` for Copilot and `graphify install --platform opencode`
      for OpenCode (Graphify puts the OpenCode skill in your user's OpenCode config,
-     `~/.config/opencode/skills/graphify/`, and a plugin in `.opencode/plugins/`), so the
+     `~/.config/opencode/skills/graphify/`, and a plugin next to it in
+     `~/.config/opencode/plugins/`, which only acts in projects that have a graph; Graphify
+     releases before 0.9.99 put the plugin in the project's `.opencode/plugins/`), so the
      agents check the knowledge graph before answering questions about your code;
    - `graphify hook install` — git hooks that update the graph on every commit and branch
      checkout once it exists (skipped if the project isn't a git repository).
@@ -249,8 +266,9 @@ OpenCode calls skills with `@` instead:
 6. Keeps what it installed out of git: the agents and skills, the files it created
    (including `AGENTS.md`) and its manifest are listed in `.git/info/exclude`, which is
    local to your clone, so not even that list shows up in git. Graphify's own files
-   (`graphify-out/`, `.gitattributes`, `.opencode/plugins/graphify.js`) stay visible,
-   because Graphify is designed for the graph to be committed and shared. The exceptions
+   (`graphify-out/`, `.gitattributes` and, from Graphify releases before 0.9.99,
+   `.opencode/plugins/graphify.js`) stay visible, because Graphify is designed for the graph
+   to be committed and shared. The exceptions
    are the two files Graphify derives from the work memory,
    `graphify-out/reflections/LESSONS.md` and `graphify-out/.graphify_learning.json`: they
    change on every commit and would conflict between branches, and agents rebuild them from
@@ -310,11 +328,13 @@ Local edits to the agents, skills and MCP server entries RelayAI installed are o
 so put your own customizations in agents and skills with other names. MCP servers you added
 yourself are never touched, even if one has the same name as RelayAI's.
 
-Graphify isn't upgraded by `update`, because it's installed machine-wide and other projects
-may use it. Upgrade it when you want with:
+Like `init`, `update` checks Graphify's version and, below 0.9.94, offers to upgrade it (see
+step 1 of [What `relay-ai init` does](#what-relay-ai-init-does)). Graphify is installed
+machine-wide and other projects may use it, so it's never upgraded without your yes. To
+upgrade it yourself at any time:
 
 ```bash
-uv tool upgrade graphifyy
+uv tool install graphifyy@latest
 ```
 
 If `uvx` ever seems to run an old RelayAI, add `--refresh` to bypass its cache:
@@ -351,7 +371,9 @@ uvx --from git+https://github.com/hugoadriao/relay-ai relay-ai uninstall --graph
 
 The graph in `graphify-out/` is never deleted; remove that folder yourself if you don't want
 it. Graphify itself stays installed on your machine for other projects; remove it with
-`uv tool uninstall graphifyy`.
+`uv tool uninstall graphifyy`. Its machine-wide files stay too: the `/graphify` skills in
+your user's Copilot and OpenCode configs and, since Graphify 0.9.99, the OpenCode plugin in
+`~/.config/opencode/plugins/`, which only acts in projects that have a graph.
 
 ## Troubleshooting
 
@@ -365,6 +387,22 @@ New-ItemProperty -Path 'HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem' -Name
 ```
 
 and open a new terminal, or move the project to a shorter path (e.g. `C:\dev\<project>`).
+
+**OpenCode 2: "failed to load plugin" for `graphify.js`.** OpenCode's log shows
+`Plugin must export a default definition`, or an `NpmInstallFailedError`, for
+`.opencode/plugins/graphify.js`. Graphify 0.9.83 and older wrote that plugin in a format
+OpenCode 2 can't load, and listed it in `.opencode/opencode.json` in a way OpenCode 2 reads as
+an npm package. To fix it:
+
+1. Upgrade Graphify: run `relay-ai update` and accept the upgrade, or run
+   `uv tool install graphifyy@latest` yourself.
+2. In the project, run a regular Graphify command, such as `graphify update .`. Graphify then
+   replaces the old plugin and removes the stale entry from `.opencode/opencode.json`. It
+   only does this when OpenCode 1.3.4 or newer is on your PATH, and its `install` commands,
+   which `relay-ai update` runs, skip this step.
+3. Restart OpenCode.
+
+Don't edit the plugin by hand: it's Graphify's file, and Graphify rewrites it.
 
 **MCP servers blocked.** Some corporate environments block MCP servers or the downloads
 they need (`npx`, remote URLs). RelayAI's agents still work without them: the

@@ -6,7 +6,9 @@ from relay_ai.errors import SetupError
 
 def capture(command: list[str], cwd: Path | None = None) -> str:
     try:
-        result = subprocess.run(command, capture_output=True, check=True, cwd=cwd, text=True)
+        result = subprocess.run(
+            command, capture_output=True, check=True, cwd=cwd, errors='replace', text=True
+        )
     except (OSError, subprocess.CalledProcessError) as err:
         raise SetupError(f"'{' '.join(command)}' failed") from err
     return result.stdout.strip()
