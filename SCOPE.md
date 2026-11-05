@@ -99,6 +99,8 @@ relay-ai/
 │       ├── skills/testing-python/       # #52 (testes Python; SKILL.md + referências)
 │       ├── skills/debugging-python/     # #28, #47, #48 (SKILL.md + referências)
 │       └── mcp.json                     # servidores MCP, formato neutro (#18, #31)
+├── docs/agents/             # configuração das skills do mattpocock/skills para desenvolver o RelayAI
+├── .scratch/<feature>/      # issues locais: spec.md + issues/NN-<slug>.md (docs/agents/issue-tracker.md)
 ├── README.md
 ├── SCOPE.md
 └── CLAUDE.md                # carregado automaticamente pelo Claude Code; importa este arquivo
@@ -204,7 +206,6 @@ Pontos a grillar antes de escrever:
 - Publicar no PyPI (para `uvx relay-ai init`) e quando.
 - Adicionar um arquivo `LICENSE` ao repositório (o pacote declara MIT, mas o arquivo não
   existe).
-- Onde fica `docs/`, se precisar existir.
 
 ## Fora de escopo (por enquanto)
 

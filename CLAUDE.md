@@ -47,3 +47,17 @@ As seções "Planejado" e "Em aberto" do `SCOPE.md` são o trabalho pendente mai
 - Documentação de apoio (este arquivo, `SCOPE.md`, `README.md`): pode ficar em português.
 - Toda decisão nova vai para a tabela de decisões do `SCOPE.md`, no mesmo formato das
   existentes — não deixe decisões só na conversa.
+
+## Agent skills
+
+### Issue tracker
+
+Issues and specs live as local markdown files under `.scratch/<feature>/`. See `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+Default vocabulary (`needs-triage`, `needs-info`, `ready-for-agent`, `ready-for-human`, `wontfix`), recorded as a `Status:` line in each issue file. See `docs/agents/triage-labels.md`.
+
+### Domain docs
+
+Single-context; architectural decisions live in the `SCOPE.md` decision table, not in `docs/adr/`. See `docs/agents/domain.md`.
