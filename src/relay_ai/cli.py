@@ -43,7 +43,7 @@ def main() -> None:
 
 
 def _ask_platforms() -> list[Platform]:
-    if not sys.stdin.isatty():
+    if not console.is_interactive():
         raise SetupError('choose a platform with --platform copilot|opencode|both')
 
     options = [*[[platform] for platform in PLATFORMS], list(PLATFORMS)]
