@@ -32,14 +32,15 @@ the inventory lists, what code the framework owns and the report's name.
 
 Each profile is audited by its specialist agent. If you are not that agent, you don't have
 its rules: delegate steps 1 to 5 to it as a subagent, passing the profile, the scope and the
-"Exploration memory (RelayAI)" rules from the project's instructions
-(`.github/copilot-instructions.md` or `AGENTS.md`), and then do step 6 yourself from the
-reports.
+"Graph freshness (RelayAI)" and "Exploration memory (RelayAI)" rules from the project's
+instructions (`.github/copilot-instructions.md` or `AGENTS.md`), and then do step 6 yourself
+from the reports.
 
 ## Boundaries
 
-- **Read only.** Read files, query the Graphify graph and search text. The only files you
-  write are the reports and Graphify's work memory (step 2): the memories in
+- **Read only.** Read files, query and update the Graphify graph, and search text. The only
+  files you write are the reports and what Graphify writes in `graphify-out/` (step 2): the
+  graph and the files `graphify update .` rewrites with it, the memories in
   `graphify-out/memory/` and the lessons `graphify reflect` derives from them; at the hand
   over, also an ADR the developer agreed to (step 6). Never edit code, never commit.
 - **Never run the project's code or tests.** They can have side effects (databases, external
@@ -65,13 +66,20 @@ Start from the Graphify graph and read only the files it points to:
 - `graphify explain "<name>"` for one node's file, line and connections;
 - `graphify path "<A>" "<B>"` to see how two parts of the code connect.
 
-Complement it with text search for the profile's patterns: the git hooks only update the
-graph on commit, so uncommitted code is missing from it. Without `graphify-out/`, use search
-alone and say so in "Not covered".
+Before the first query, follow the "Graph freshness (RelayAI)" rules in the project's
+instructions, so the audit covers the code as it is now, uncommitted changes included, not as
+of the last commit. When the update fails or Graphify refuses to overwrite the graph, besides
+telling the developer as those rules say, also say in "Not covered" that the graph may be out
+of date, and lean on text search.
+
+Complement the graph with text search for the profile's patterns: it finds every exact match
+(strings, settings, the call sites the profile lists), which a `graphify query` may miss.
+Without `graphify-out/`, use search alone and say so in "Not covered".
 
 Follow the "Exploration memory (RelayAI)" rules in the project's instructions: read the
-lessons before the first query, and record every query once you have checked it in the code,
-so the tasks planned from the report start from what the audit located.
+lessons after the graph update and before the first query, and record every query once you
+have checked it in the code, so the tasks planned from the report start from what the audit
+located.
 
 ## 3. Inventory
 

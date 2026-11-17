@@ -33,12 +33,31 @@ Python tests in this project are written and reviewed following the `testing-pyt
 (`.agents/skills/testing-python/SKILL.md`), together with the `tdd` skill, unless the project's
 own testing standard says otherwise.
 
+## Graph freshness (RelayAI)
+
+When `graphify-out/graph.json` exists, keep the graph in step with the code before you query it.
+Graphify's git hooks update it only on commit and checkout, and outside git nothing updates it, so
+code that is not committed yet, including the code you just wrote, is missing from it. Run
+`graphify update .` (it re-extracts the code without an LLM and takes a few seconds):
+
+1. At the start of a task, before the first graph query: in a git repository, when
+   `git status --porcelain` lists changed or untracked code files; outside git, always.
+2. After you change code, once before the next graph query, however many edits you made.
+
+When `graphify update .` fails or refuses to overwrite the graph (for example "Refusing to
+overwrite", with a suggestion to pass `--force`), keep the graph as it is: the refusal protects
+nodes this command cannot rebuild, and `--force` would drop them. Tell the developer that the
+graph may be out of date, with the command that failed, and go on with text search and file
+reads. Docs and images are not re-extracted by this command: they need the `graphify` skill run
+with `--update`, which uses an LLM, so leave it to the developer.
+
 ## Exploration memory (RelayAI)
 
 When `graphify-out/graph.json` exists, use Graphify's work memory, so that each task starts from
 what earlier sessions learned about this code and leaves what it learned for the next ones:
 
-1. Before the first exploration of the code in a task, run `graphify reflect --if-stale` and read
+1. Before the first exploration of the code in a task, and after updating the graph when "Graph
+   freshness (RelayAI)" calls for it, run `graphify reflect --if-stale` and read
    `graphify-out/reflections/LESSONS.md`: start from its preferred sources, skip its known dead
    ends and apply its corrections. The code may have changed since a lesson was recorded: check
    in the code what a lesson points to before relying on it, and re-check every node that
@@ -62,8 +81,8 @@ what earlier sessions learned about this code and leaves what it learned for the
    project and pass `--answer-file` instead of `--answer`.
 3. Write the question, the answer and the correction in English, whatever the language of the
    conversation.
-4. Put these rules in the prompt of every subagent that explores code, and ask it to report
-   back how many memories it recorded, by outcome.
+4. Put these rules and the "Graph freshness (RelayAI)" rules in the prompt of every subagent
+   that explores code, and ask it to report back how many memories it recorded, by outcome.
 5. At the end of the task, the agent talking to the developer tells them in one line how many
    memories were recorded, by outcome, its subagents' included.
 {end}
