@@ -85,6 +85,36 @@ what earlier sessions learned about this code and leaves what it learned for the
    that explores code, and ask it to report back how many memories it recorded, by outcome.
 5. At the end of the task, the agent talking to the developer tells them in one line how many
    memories were recorded, by outcome, its subagents' included.
+
+## Pull request blast radius (RelayAI)
+
+When you write the body of a pull request (for example with the `pr` skill), the diff shows the
+lines that changed but not the code that depends on them. When `graphify-out/graph.json` exists
+and the pull request changes or adds functions or classes, add what the graph knows to the blast
+radius you would write anyway:
+
+1. Follow the "Graph freshness (RelayAI)" rules.
+2. List the functions and classes that the pull request's commits change or add, from
+   `git diff <base>...HEAD`. The base is the pull request's target branch (`origin/<branch>` when
+   only the remote has it) or, when there is none, the repository's default branch.
+3. Run `graphify affected "<label>" --relation calls` for each of them: a large pull request is
+   the one that most needs every caller checked. The label is the name as the graph shows it,
+   `name()` for a function and a method without its class (`.get()`). It lists the callers and
+   their callers, with file and line. When it answers "No unique node match", the label belongs
+   to more than one node: `graphify explain "<label>"` then exits with 3 and lists each node's
+   file and id; run `graphify affected` again with the id of the node in the changed file.
+4. Run `graphify god-nodes --top 10` to see whether a changed function or class is among the
+   most connected nodes of the code. The list can also hold sections of docs (`graphify explain`
+   shows `Type: document` for them): rank the code nodes only.
+
+In the blast radius, keep the one word the `pr` skill asks for and write its description as short
+bullets: one for each caller outside the diff whose behavior changes with the pull request, with
+`file:line` and the consequence, and one for each changed function or class among the most
+connected code nodes, with its rank and number of connections. Callers the diff already shows are
+in front of the reviewer, so they stay out. Without the graph, or when the pull request changes
+no function or class, write the blast radius as the `pr` skill says. Record none of these
+commands (`affected`, `god-nodes` and the `explain` of step 3) with `graphify save-result`: they
+describe the pull request, not where things are in the code.
 {end}
 """
 
