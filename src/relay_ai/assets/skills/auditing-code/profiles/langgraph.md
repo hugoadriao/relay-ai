@@ -20,7 +20,10 @@ built with create_agent and their tools", "where are the prompts loaded", "where
 services the graph uses created".
 
 Text search: `StateGraph(`, `.compile(`, `create_agent(`, `@tool`, `BaseTool`,
-`context_schema`, `system_prompt`, `ainvoke(`, `astream(`.
+`context_schema`, `system_prompt`, `ainvoke(`, `astream(`. For code that mines the state
+or the message history, which the specialist runs through "Is this code needed?":
+`state['messages']`, `reversed(`, `.name ==`, `isinstance(` against message classes,
+`InjectedState`, `RemoveMessage`.
 
 ## Inventory
 

@@ -49,13 +49,16 @@ needs a change on the application side, say so instead of making it.
    servers aren't available, read the official LangGraph docs pages directly instead.
 2. **Find what already exists.** Look for existing graphs, state schemas, nodes and
    checkpointer setup before creating new ones, and extend them instead of duplicating.
-3. **Read the decisions already made.** Read the ADRs in `docs/adr/` that touch the area
+3. **Check the need before adding code.** Before adding a node, tool, middleware, helper or
+   state field, run it through "Is this code needed?" (in "Judging the code"): write it only
+   if the model, the agent framework and the graph don't already cover the need.
+4. **Read the decisions already made.** Read the ADRs in `docs/adr/` that touch the area
    you're working in. Don't propose again a structural change an ADR settled; when the
    friction is real enough to reopen it, say so explicitly, in the form "Contradicts ADR-NNNN
    (<title>), but worth reopening because…". Runtime and correctness problems are still fixed
    (see "The standard you hold the code to"), saying which ADR they contradict. If there are
    no ADRs, go on without mentioning it.
-4. **If you were given a ticket**, read it in full, including its acceptance criteria and
+5. **If you were given a ticket**, read it in full, including its acceptance criteria and
    blockers, and implement exactly that ticket.
 
 ## How you build
@@ -269,8 +272,74 @@ developer's agreement, incrementally. The pattern:
 An anti-pattern is a solution that makes something work without being the right way to
 build it. Making the code work is not enough: it has to be simple, consistent and easy to
 maintain.
-Before changing anything, understand what the code is for. Then judge it against that
-purpose, in the code you are touching and in the code it depends on.
+Before changing anything, understand what the code is for and whether it is needed at all
+("Is this code needed?"). Then judge it against that purpose, in the code you are touching
+and in the code it depends on.
+
+### Is this code needed?
+
+Every piece of code a node, tool or middleware runs has to earn its place. Suspect first
+the code that reads the state or the message history programmatically — scanning `messages`
+for the last message of a type or `name`, rebuilding the conversation into a string,
+converting message types so another agent "sees" them, keeping data in messages marked by a
+text prefix: it usually redoes by hand what the model or the framework already does. For
+each such piece — existing code you touch or audit, and code you are about to write —
+answer four questions, in order, before judging or changing it:
+
+1. **What does it do?** Read it and trace the data: where its input comes from, what it
+   produces and who consumes it.
+2. **Why does it exist?** State the need it serves in one sentence, in terms of the domain
+   or the flow ("the writer needs the user's question"), not of the code ("it finds the last
+   `HumanMessage`"). If no need can be stated, it is dead code. Then ask whether the need is
+   real or was created by a defect upstream: a tool that hands the model the conversation
+   history exists because the agent was invoked without it.
+3. **Do the model, the agent framework or the graph already cover that need?** Check in this
+   order, and confirm with the docs MCP servers that the feature exists in the installed
+   version:
+   - **The model.** It reads everything in its context — the system prompt, the
+     conversation the agent receives, tool results — and summarises, compares, selects and
+     answers from it. Code that extracts, reformats or sends again what the model already
+     sees is redundant, and so is an agent or tool whose only job is to return it.
+   - **The agent framework.** `create_agent` runs the tool-calling loop; `response_format`
+     gives structured output; built-in middleware summarises long histories
+     (`SummarizationMiddleware`), clears old tool results (`ContextEditingMiddleware`),
+     limits model and tool calls, retries, falls back to another model, turns tool errors
+     into messages and asks for human approval; `@dynamic_prompt` adds per-run instructions;
+     `ToolRuntime` gives tools the context and the state.
+   - **The graph.** A checkpointer with a `thread_id` keeps the conversation between turns;
+     typed state fields with reducers carry data between nodes; `input_schema` and
+     `output_schema` define what goes in and out; `Command` updates the state and routes;
+     a sub-agent invoked with its own input message
+     (`ainvoke({'messages': [HumanMessage(content=task)]}, context=runtime.context)`)
+     receives exactly its task.
+4. **Verdict**, one of:
+   - **Needed**: keep it.
+   - **Fed the wrong way**: the logic is needed, but its input belongs in a typed state
+     field, a tool parameter or the runtime context instead of being mined from messages
+     (see "Read typed state").
+   - **Replace**: a native feature does the same job; use it and delete the code.
+   - **Remove**: the model or the graph already does it, or the need disappears once the
+     upstream cause is fixed. Fix that cause and delete the code together with everything
+     that only existed for it (routing rules, prompts, tests).
+
+"The model can do it" is not enough where the outcome must be guaranteed: the model is
+probabilistic. Deterministic code is needed for security and authorisation (an
+`artifact_id` checked against the conversation's catalog), for checking what the model
+reported against what actually happened (the artifact ids a sub-agent claims against the
+ones its tools produced), for business rules and calculations, and for limits and cost.
+Keep it there, and keep it out of everything else.
+
+A real case: an agent with its own tool and a page of routing rules answered "what did we
+talk about?" by rebuilding question-and-answer pairs from the message history, matching
+messages by type and by the `name` of the planner and the writer. The need was real
+(answering questions about the conversation); its cause was that sub-agents were invoked
+with only the planner's task, so none of them saw the history. The conversation the
+checkpointer already keeps, given to the agent that answers the user, covers it, with
+`SummarizationMiddleware` once it grows: the agent, the tool and the routing rules go away.
+
+When the verdict changes code, show the four answers briefly, so the developer can follow
+the reasoning. A "Replace" or "Remove" verdict is over-engineering: be emphatic about it, as
+below.
 
 ### What counts as an anti-pattern
 
@@ -295,7 +364,11 @@ purpose, in the code you are touching and in the code it depends on.
    - classes that only hold static or class methods (use module functions);
    - several dependency-injection mechanisms side by side, or services threaded through
      constructors and layers instead of the runtime context;
-   - an LLM call that decides nothing (see "An LLM only where something needs deciding").
+   - an LLM call that decides nothing (see "An LLM only where something needs deciding");
+   - code that redoes what the model already sees in its context or what the framework
+     provides natively: helpers that mine the message history, agents or tools that
+     return the conversation, hand-made summarisation, retries or call counters (see "Is
+     this code needed?").
 4. **Technical misuse of LangGraph:**
    - sync nodes, sync `invoke` / `stream` or blocking I/O in an async application, and
      `asyncio.run` inside nodes or tools;
